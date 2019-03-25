@@ -23,9 +23,6 @@ Button* buttons[NUM_BUTTONS];
 /******************************************************************************
  * Local variables
  *****************************************************************************/
-static char buff[25] = {0};
-static bool redrawResult = true;
-static bool clearResult = true;
 
 /*********  TFT DISPLAY INIT *********/
 DmTftIli9341 tft(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
@@ -60,19 +57,18 @@ int main() {
 	uint16_t y = 0;
 	uint16_t w = tft.width();
 	uint16_t h = tft.height();
-	uint16_t size = (w - (BUTTONS_PER_LINE + 1)*MARGIN)/BUTTONS_PER_LINE;
-	uint16_t yoff = h - (size + MARGIN)*BUTTONS_NUM_LINES;
+	uint16_t size = 50;//(w - (BUTTONS_PER_LINE + 1)*MARGIN)/BUTTONS_PER_LINE;
 	bool down = false;
 
 	tft.init();
-	tft.clearScreen(WHITE);
-	tft.fillRectangle(RESULT_MARGIN_X, RESULT_MARGIN_Y, w-RESULT_MARGIN_X, yoff-RESULT_MARGIN_Y, BLACK);
+	tft.clearScreen(BLACK);
+	tft.fillRectangle(RESULT_MARGIN_X, RESULT_MARGIN_Y, w-RESULT_MARGIN_X, h-RESULT_MARGIN_Y, WHITE);
 	touch.init();
 
 	// Fonction
 
-	x = MARGIN + (size + MARGIN) * (0 % BUTTONS_PER_LINE);
-	y = yoff + (size + MARGIN) * (0 / BUTTONS_PER_LINE);
+	x = 100; //MARGIN + (size + MARGIN) * (0 % BUTTONS_PER_LINE);
+	y = 100; // h + (size + MARGIN) * (0 / BUTTONS_PER_LINE);
 	buttons[0] = new Button(captions[0], x, y, size, size);
 	buttons[0]->setAction(handleClick, captions[0][0]);
     buttons[0]->draw(&tft);
@@ -82,17 +78,10 @@ int main() {
 	    if (buttons[0]->handle(x, y, down)) {
 	        buttons[0]->draw(&tft);
 	    }
-
-	    if (clearResult) {
-	      clearResult = false;
-	      tft.fillRectangle(RESULT_MARGIN_X, RESULT_MARGIN_Y, w-RESULT_MARGIN_X, yoff-RESULT_MARGIN_Y, BLACK);
-
-	    if (redrawResult) {
-	      redrawResult = false;
-	      tft.drawStringCentered(RESULT_MARGIN_X, RESULT_MARGIN_Y, w-RESULT_MARGIN_X, yoff-RESULT_MARGIN_Y, &buff[0]);
-	    }
-
 	    wait(0.02);
 	}
 }
+
+
+
 
