@@ -98,7 +98,7 @@ DigitalInOut csSDCard(DM_PIN_CS_SDCARD, PIN_OUTPUT, PullUp, 1);
   #define BUTTONS_NUM_LINES  3
 
   const char* menu_Items[] = {
-          "BATTERY STATUS","SOUND\nDIRECTION",
+          "BATTERY STATUS","SOUND DIRECTION",
           "SETTINGS"
   };
 #endif
@@ -268,21 +268,39 @@ void handleClick_Sound(uint32_t arg=0)
 
 }
 
-//void follow_cursor(uint32_t arg=0){
-//	bool down = false;
-//    uint16_t x = 0;
-//    uint16_t y = 0;
-//	touch.readTouchData(x, y, down);
-//	settings_buttons[1]= Button(settings_menu_Items[0], x1, y1, size1, size1)
-//
-//}
+// speed value :
+int speed = 50;
+
+
+void change_speed(uint32_t arg){
+
+	uint16_t x1 = tft.width()/2 - 10;
+    uint16_t y1 = 50 + MARGIN;
+    uint16_t size1 = 50;
+    char speed_str[4];
+
+	if (arg==0){ // case "-" pressed
+		tft.fillRectangle(x1, y1, x1+size1, y1+size1, BLACK);
+		speed--;
+		sprintf(speed_str, "%d", speed);
+		tft.drawString(x1, y1, speed_str);
+	}
+	if (arg==1){ // case "+" pressed
+		tft.fillRectangle(x1, y1, x1+size1, y1+size1, BLACK);
+		speed++;
+		sprintf(speed_str, "%d", speed);
+		tft.drawString(x1, y1, speed_str);
+	}
+
+
+}
 
 void handleClick_Settings(uint32_t arg=0)
 {
   bool down = false;
   uint16_t x = 0;
   uint16_t y = 0;
-
+  // parameters for back button
   uint16_t x1 = 0;
   uint16_t y1 = 0;
   uint16_t size1 = 50;
@@ -300,22 +318,27 @@ void handleClick_Settings(uint32_t arg=0)
   sprintf(battery_level_str, "%.1f %s", battery_level, percent); // to convert battery_level to a string of a format "70.0 %"
 
   // create a new set of buttons
-  const int NUM_SETTINGS_BUTTONS = 1;
+  const int NUM_SETTINGS_BUTTONS = 3;
   const char* settings_menu_Items[] = {
-		  "back"};
+		  "back", "-", "+"};
   Button* settings_buttons[NUM_SETTINGS_BUTTONS];
 
   // config the back button
   settings_buttons[0]= new Button(settings_menu_Items[0], x1, y1, size1, size1);
   settings_buttons[0]->setAction(home_page, settings_menu_Items[0][0]); // back to the home page
-//  // config the speed button
-//  settings_buttons[1]= new Button(settings_menu_Items[0], x1, y1, size1, size1);
-//  settings_buttons[1]->setAction(follow_cursor);
+  // config the speed button "-"
+  settings_buttons[1]= new Button(settings_menu_Items[1], x1+size1+MARGIN, y1+size1+MARGIN, size1, size1);
+  settings_buttons[1]->setAction(change_speed, 0); // "0" refers to "-"
+  // config the speed button "-"
+  settings_buttons[2]= new Button(settings_menu_Items[2], tft.width()-size1-MARGIN, y1+size1+MARGIN, size1, size1);
+  settings_buttons[2]->setAction(change_speed, 1); // "1" refers to "+"
 
 
   tft.init();
   touch.init();
 
+  tft.drawString(0, size1 + MARGIN, "Speed :");
+  tft.drawNumber(tft.width()/2 - 10, 50 + MARGIN, speed, 3, false);
 
 
   for (int i = 0; i < NUM_SETTINGS_BUTTONS; i++) {
@@ -353,7 +376,7 @@ int main() {
   for (int i = 0; i < NUM_BUTTONS;i++) {
     x = MARGIN + (size + MARGIN) * (i % BUTTONS_PER_LINE);
     y = size*i + MARGIN;
-    buttons[i] = new Button(menu_Items[i], x, y, size, size);
+    buttons[i] = new Button(menu_Items[i], x, y, tft.width(), size);
   }
 
   // setting the action for each button
