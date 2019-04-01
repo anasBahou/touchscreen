@@ -150,7 +150,7 @@ void handleClick_Sound(uint32_t arg=0) {
 	uint16_t y_back = 0;
 	uint16_t size_back = 50;
 
-	// Taille screen
+	// Size screen
 	uint16_t w = tft.width();
 	uint16_t h = tft.height();
 
@@ -253,11 +253,11 @@ void handleClick_Settings(uint32_t arg=0) {
 	settings_buttons[0]->setAction(home_page, settings_menu_Items[0][0]); // back to the home page
 
 	// config the speed button "-"
-	settings_buttons[1]= new Button(settings_menu_Items[1], x1+size1+MARGIN, y1+size1+MARGIN, size1, size1);
+	settings_buttons[1]= new Button(settings_menu_Items[1], x_back+size_back+MARGIN, y1+size_back+MARGIN, size_back, size_back);
 	settings_buttons[1]->setAction(change_speed, 0); // "0" refers to "-"
 
 	// config the speed button "-"
-	settings_buttons[2]= new Button(settings_menu_Items[2], tft.width()-size1-MARGIN, y1+size1+MARGIN, size1, size1);
+	settings_buttons[2]= new Button(settings_menu_Items[2], tft.width()-size_back-MARGIN, y1+size_back+MARGIN, size_back, size_back);
 	settings_buttons[2]->setAction(change_speed, 1); // "1" refers to "+"
 
 	// Initialisation
