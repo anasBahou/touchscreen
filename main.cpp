@@ -38,7 +38,7 @@
 
 #define NUM_BUTTONS  (sizeof(menu_Items)/sizeof(menu_Items[0]))
 
-#define NUM_SETTINGS_VARIABLES  (sizeof(menu_Items)/sizeof(menu_Items[0]))
+#define NUM_SETTINGS_VARIABLES  2
 
 #if 1
   /* Displays without adapter */
@@ -116,7 +116,7 @@ static bool clearResult = true;
 uint32_t settings_address = 0x080FF000;
 
 uint32_t back_from_settings = 0;
-uint16_t settings_variables[5];
+uint16_t settings_variables[NUM_SETTINGS_VARIABLES+1];
 
 /******************************************************************************
  * Global variables
