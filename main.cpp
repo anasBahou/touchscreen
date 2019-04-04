@@ -38,6 +38,8 @@
 
 #define NUM_BUTTONS  (sizeof(menu_Items)/sizeof(menu_Items[0]))
 
+#define NUM_SETTINGS_VARIABLES  (sizeof(menu_Items)/sizeof(menu_Items[0]))
+
 #if 1
   /* Displays without adapter */
   #define DM_PIN_SPI_MOSI   D11
@@ -62,6 +64,7 @@
 /******************************************************************************
  * Local variables
  *****************************************************************************/
+FlashIAP my_flash;
 
 //DmTftIli9325 tft;  /* DM_TFT28_103 and DM_TFT24_104 */
 DmTftIli9341 tft(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);  /* DmTftIli9341(PinName cs, PinName dc, PinName mosi, PinName miso, PinName clk)  DM_TFT28_105 and DM_TFT28_116*/
@@ -109,6 +112,12 @@ static char buff[25] = {0};
 static bool redrawResult = true;
 static bool clearResult = true;
 
+// Address
+uint32_t settings_address = 0x080FF000;
+
+uint32_t back_from_settings = 0;
+uint16_t settings_variables[5];
+
 /******************************************************************************
  * Global variables
  *****************************************************************************/
@@ -117,12 +126,53 @@ static bool clearResult = true;
 /******************************************************************************
  * Local functions
  *****************************************************************************/
+
+void read_variables(){
+
+	  my_flash.read(settings_variables , settings_address, my_flash.get_page_size());
+//	  my_flash.read(settings_variables+1 , mic_sens_adress, 1);
+
+	  printf("speed : %d\n", settings_variables[0]);
+	  printf("mic_sens : %d\n", settings_variables[1]);
+//	  printf("mic_sens : %d\n", settings_variables[1]);
+
+}
+
+void save_variables(){
+
+
+	  my_flash.erase(settings_address, my_flash.get_sector_size(settings_address));
+	  my_flash.program(settings_variables , settings_address, my_flash.get_page_size());
+
+
+//      uint32_t ret1 = my_flash.get_page_size();
+//      uint32_t ret2 = my_flash.get_sector_size(settings_address);
+//	  printf("program : %d\n", ret);
+//	  printf("get_page_size : %d\n", ret1);
+//	  printf("get_sector_size : %d\n", ret2);
+//	  my_flash.program(settings_variables+1 , mic_sens_adress, 1);
+
+	  printf("Settings saved \n");
+	  printf("Saved speed : %d\n", settings_variables[0]);
+	  printf("Saved mic_sens : %d\n", settings_variables[1]);
+
+
+}
+
+
+
 void home_page(uint32_t arg=0){
   bool down = false;
   uint16_t x = 0;
   uint16_t y = 0;
   tft.init();
   touch.init();
+
+  // case back from the settings window ==> need to save the settings
+
+	if (arg == back_from_settings){
+	  save_variables();
+	}
 
   for (int i = 0; i < NUM_BUTTONS; i++) {
 	buttons[i]->draw(&tft);
@@ -138,7 +188,7 @@ void home_page(uint32_t arg=0){
 	  }
 	}
 
-	wait(0.02);
+	//wait(0.02);
 
   }
 
@@ -147,6 +197,7 @@ void home_page(uint32_t arg=0){
 
 void handleClick_Battery(uint32_t arg=0)
 {
+	// parameteres for the readTouchData function
   bool down = false;
   uint16_t x = 0;
   uint16_t y = 0;
@@ -195,7 +246,7 @@ void handleClick_Battery(uint32_t arg=0)
 	  }
 	}
 
-	wait(0.02);
+	//wait(0.02);
   }
 
 }
@@ -211,13 +262,9 @@ void handleClick_Sound(uint32_t arg=0)
   uint16_t y1 = 0;
   uint16_t size1 = 50;
 
-  uint16_t x0_rect = 60;
-  uint16_t y0_rect = 80;
   uint16_t w = tft.width();
   uint16_t h = tft.height();
-  uint16_t x1_rect = w - x0_rect;
-  uint16_t y1_rect = h - y0_rect;
-  uint16_t rect_height = y1_rect - y0_rect;
+
 
 
   const char* back_menu_Items[] = {
@@ -263,33 +310,44 @@ void handleClick_Sound(uint32_t arg=0)
 	  }
 	}
 
-	wait(0.02);
+	//wait(0.02);
   }
 
 }
 
-// speed value :
-int speed = 50;
 
 
-void change_speed(uint32_t arg){
+void change_setting(uint32_t arg){
 
-	uint16_t x1 = tft.width()/2 - 10;
+	uint16_t x1 = tft.width()/2 ;
     uint16_t y1 = 50 + MARGIN;
     uint16_t size1 = 50;
-    char speed_str[4];
 
+    char speed_str[4];
+    char mic_sens_str[4];
+
+    // Handling the speed variation
 	if (arg==0){ // case "-" pressed
-		tft.fillRectangle(x1, y1, x1+size1, y1+size1, BLACK);
-		speed--;
-		sprintf(speed_str, "%d", speed);
-		tft.drawString(x1, y1, speed_str);
+		tft.fillRectangle(x1 + MARGIN, y1, x1+size1, y1+size1, BLACK);
+		settings_variables[0]--; // settings_variables[0] <=> speed variable
+		tft.drawNumber(x1 , y1, settings_variables[0], 3, false); //  settings_variables[0] <=> speed variable
 	}
 	if (arg==1){ // case "+" pressed
-		tft.fillRectangle(x1, y1, x1+size1, y1+size1, BLACK);
-		speed++;
-		sprintf(speed_str, "%d", speed);
-		tft.drawString(x1, y1, speed_str);
+		tft.fillRectangle(x1+MARGIN, y1, x1+size1, y1+size1, BLACK);
+		settings_variables[0]++;
+		tft.drawNumber(x1, y1, settings_variables[0], 3, false); //  settings_variables[0] <=> speed variable
+	}
+
+	// Handling the mic_sens variation
+	if (arg==2){ // case "-" pressed
+		tft.fillRectangle(x1+ MARGIN, 2*y1, x1+size1, 2*y1+size1, BLACK);
+		settings_variables[1]--; // settings_variables[0] <=> speed variable
+		tft.drawNumber(x1 , 2*y1, settings_variables[1], 3, false);
+	}
+	if (arg==3){ // case "+" pressed
+		tft.fillRectangle(x1+MARGIN, 2*y1, x1+size1, 2*y1+size1, BLACK);
+		settings_variables[1]++;
+		tft.drawNumber(x1 , 2*y1, settings_variables[1], 3, false);
 	}
 
 
@@ -305,40 +363,36 @@ void handleClick_Settings(uint32_t arg=0)
   uint16_t y1 = 0;
   uint16_t size1 = 50;
 
-  uint16_t x0_rect = 60;
-  uint16_t y0_rect = 80;
-  uint16_t x1_rect = tft.width() - x0_rect;
-  uint16_t y1_rect = tft.height() - y0_rect;
-  uint16_t rect_height = y1_rect - y0_rect;
-
-  float battery_level = 70; // to be able to do the division by 100
-  uint16_t level_to_pixel = (uint16_t)(((100-battery_level)/100)*rect_height); // conversion to an integer
-  char battery_level_str[6];
-  const char percent[] = "%";
-  sprintf(battery_level_str, "%.1f %s", battery_level, percent); // to convert battery_level to a string of a format "70.0 %"
 
   // create a new set of buttons
-  const int NUM_SETTINGS_BUTTONS = 3;
+  const int NUM_SETTINGS_BUTTONS = 5;
   const char* settings_menu_Items[] = {
-		  "back", "-", "+"};
+		  "back", "-", "+", "-", "+"};
   Button* settings_buttons[NUM_SETTINGS_BUTTONS];
 
   // config the back button
   settings_buttons[0]= new Button(settings_menu_Items[0], x1, y1, size1, size1);
-  settings_buttons[0]->setAction(home_page, settings_menu_Items[0][0]); // back to the home page
+  settings_buttons[0]->setAction(home_page, back_from_settings); // back to the home page
   // config the speed button "-"
-  settings_buttons[1]= new Button(settings_menu_Items[1], x1+size1+MARGIN, y1+size1+MARGIN, size1, size1);
-  settings_buttons[1]->setAction(change_speed, 0); // "0" refers to "-"
+  settings_buttons[1]= new Button(settings_menu_Items[1], x1+size1+4*MARGIN, y1+size1+MARGIN, size1, size1);
+  settings_buttons[1]->setAction(change_setting, 0); // "0" refers to "-" for the speed button
   // config the speed button "-"
   settings_buttons[2]= new Button(settings_menu_Items[2], tft.width()-size1-MARGIN, y1+size1+MARGIN, size1, size1);
-  settings_buttons[2]->setAction(change_speed, 1); // "1" refers to "+"
-
+  settings_buttons[2]->setAction(change_setting, 1); // "1" refers to "+" for the speed button
+  // config the mic_sens button "-"
+  settings_buttons[3]= new Button(settings_menu_Items[1], x1+size1+4*MARGIN, y1+2*(size1+MARGIN), size1, size1);
+  settings_buttons[3]->setAction(change_setting, 2); // "0" refers to "-" for the mic_sens button
+  // config the mic_sens button "-"
+  settings_buttons[4]= new Button(settings_menu_Items[2], tft.width()-size1-MARGIN, y1+2*(size1+MARGIN), size1, size1);
+  settings_buttons[4]->setAction(change_setting, 3); // "1" refers to "+" for the mic_sens button
 
   tft.init();
   touch.init();
 
   tft.drawString(0, size1 + MARGIN, "Speed :");
-  tft.drawNumber(tft.width()/2 - 10, 50 + MARGIN, speed, 3, false);
+  tft.drawNumber(tft.width()/2 , size1 + MARGIN, settings_variables[0], 3, false); //  settings_variables[0] <=> speed variable
+  tft.drawString(0, 2*(size1 + MARGIN), "Mic_Sens:");
+  tft.drawNumber(tft.width()/2 , 2*(size1+MARGIN), settings_variables[1], 3, false); //  settings_variables[1] <=> mic_sens variable
 
 
   for (int i = 0; i < NUM_SETTINGS_BUTTONS; i++) {
@@ -353,7 +407,7 @@ void handleClick_Settings(uint32_t arg=0)
 	  }
 	}
 
-	wait(0.02);
+	//wait(0.02);
   }
 
 }
@@ -371,12 +425,39 @@ int main() {
   uint16_t size = (h - MARGIN*BUTTONS_NUM_LINES) / BUTTONS_NUM_LINES;
   uint16_t yoff = 5;
 
+  if (my_flash.init() != 0) {
+	  printf("Error initializing flash\n"); // init the flash memory
+  }
+  ///////////////////////////////////////////////
+//  uint32_t test = 12;
+//  int ret0 = my_flash.erase(settings_address, my_flash.get_sector_size(settings_address));
+//  int ret = my_flash.program(&test , settings_address, my_flash.get_page_size());
+//  uint32_t ret1 = my_flash.get_page_size();
+//  uint32_t ret2 = my_flash.get_sector_size(settings_address);
+//  uint32_t ret3 = my_flash.get_flash_size();
+//  uint32_t ret4 = my_flash.get_flash_start();
+//  uint32_t ret5 = my_flash.get_flash_start();
+//  printf("erase : %d\n", ret0);
+//  printf("program : %d\n", ret);
+//  printf("get_page_size : %d\n", ret1);
+//  printf("get_sector_size : %d\n", ret2);
+//  printf("get_flash_size : %d\n", ret1);
+//  printf("get_flash_start : %d\n", ret2);
+////	  my_flash.program(settings_variables+1 , mic_sens_adress, 1);
+//
+//  printf("Settings saved \n");
+//  printf("Saved speed : %d\n", settings_variables[0]);
+//
+//  my_flash.read(settings_variables, settings_address, my_flash.get_page_size());
+//  printf("Speed read : %d\n", settings_variables[0]);
 
+  ///////////////////////////////////////////
+  read_variables(); // read the settings variables
 
   for (int i = 0; i < NUM_BUTTONS;i++) {
     x = MARGIN + (size + MARGIN) * (i % BUTTONS_PER_LINE);
     y = size*i + MARGIN;
-    buttons[i] = new Button(menu_Items[i], x, y, tft.width(), size);
+    buttons[i] = new Button(menu_Items[i], x, y, w, size);
   }
 
   // setting the action for each button
