@@ -37,7 +37,7 @@ DmTouch touch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
 const char* menu_Items[] = {"BATTERY STATUS", "SOUND DIRECTION", "SETTINGS"};
 Button* buttons[NUM_BUTTONS];
 
-float battery_level = 70;
+float battery_level = 100;
 int sound_angle = 160;
 
 uint32_t settings_address = 0x080FF000;
@@ -48,9 +48,8 @@ uint16_t settings_variables[NUM_SETTINGS_VARIABLES+1];
 
 
 /******************************************************************************
- * Local functions
+ * Global functions
  *****************************************************************************/
-
 
 /*
  * Read variables on flash memory
@@ -91,39 +90,107 @@ void save_variables() {
 
 
 /*
+ * Prototype handleClick_Settings
+ */
+void handleClick_Settings(uint32_t arg=0);
+
+
+/*
  * Display the home page
  */
 void home_page(uint32_t arg=0) {
-
-
 
 	// variables
     bool down = false;
     uint16_t x = 0;
     uint16_t y = 0;
 
+	// variables settings button
+	uint16_t x_set = 0;
+	uint16_t y_set = 0;
+	uint16_t height_set = 50;
+	uint16_t width_set = 100;
+
+	// variables display battery
+	uint16_t x0_rect = 200;
+	uint16_t y0_rect = 20;
+	uint16_t x1_rect = 230;
+	uint16_t y1_rect = 30;
+	uint16_t rect_height = y1_rect - y0_rect;
+
+	// screen size
+	uint16_t w = tft.width();
+	uint16_t h = tft.height();
+
     // initialization
     tft.init();
     touch.init();
+
+	// create settings button
+	const char* settings_menu_Items[] = {"settings"};
+	Button* settings_button[1];
+	settings_button[0]= new Button(settings_menu_Items[0], x_set, y_set, width_set, height_set);
+	settings_button[0]->setAction(handleClick_Settings, settings_menu_Items[2][0]); // go to settings page
+
 
     // case back from the settings window ==> need to save the settings
 	if (arg == back_from_settings){
 	  save_variables();
 	}
 
-	// display buttons
-	for (int i = 0; i < NUM_BUTTONS; i++) {
-		buttons[i]->draw(&tft);
-	}
+	// display
+	settings_button[0]->draw(&tft);
+
+    // get the sound direction
+    float sound_angle_rad = (float)sound_angle * 3.14/180;
+    uint16_t circle_radius = 80;
+    uint16_t x_sound, y_sound;
+
+    x_sound = w/2 + circle_radius*cos(sound_angle_rad);
+    y_sound = h/2 - circle_radius*sin(sound_angle_rad);
+
+    char sound_angle_str[4];
+
+    // battery
+    uint8_t battery_level_int = (uint8_t)battery_level;
+	uint16_t level_to_pixel = (uint16_t)(((100-battery_level)/100)*rect_height); // conversion to an integer
+	char battery_level_str[6];
+	const char percent[] = "%";
+	sprintf(battery_level_str, "%d%s", battery_level_int, percent); // to convert battery_level to a string of a format "70.0 %"
+
+    // display direction
+    tft.drawCircle(w/2, h/2, circle_radius, WHITE);
+    tft.drawPoint(w/2, h/2);
+    tft.drawLine(w/2, h/2, x_sound, y_sound, RED);
+
+    // drawing the Battery level
+	tft.drawString(200, 0, battery_level_str);
+   	tft.drawRectangle(x0_rect, y0_rect, x1_rect, y1_rect, WHITE);
+   	tft.drawVerticalLine(x0_rect-1, y0_rect+4, 2, WHITE);
+   	if (battery_level > 74) {
+   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, GREEN);
+   	}
+   	else if (49 < battery_level < 75) {
+   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, YELLOW);
+
+   	}
+   	else if (24 < battery_level < 50) {
+   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, ORANGE);
+   	}
+   	else if (10 < battery_level < 25) {
+   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, RED);
+   	}
+   	else {
+   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, BLACK);
+   	}
+
+
 
 	// examine if user touch the screen
 	while(true) {
 		touch.readTouchData(x, y, down);
-
-		for (int i = 0; i < NUM_BUTTONS; i++) {
-			if (buttons[i]->handle(x, y, down)) {
-				buttons[i]->draw(&tft);
-			}
+		if (settings_button[0]->handle(x_set, y_set, down)) {
+			settings_button[0]->draw(&tft);
 		}
 	}
 }
@@ -172,7 +239,7 @@ void handleClick_Battery(uint32_t arg=0) {
 	tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, RED); // +1 and -1 to avoid the rectangle borders
 
 	// display button
-	for (int i = 0; i < NUM_BUTTONS; i++) {
+	for (uint i = 0; i < NUM_BUTTONS; i++) {
 		back_button[i]->draw(&tft);
 	}
 
@@ -237,7 +304,7 @@ void handleClick_Sound(uint32_t arg=0) {
     tft.drawLine(w/2, h/2, x_sound, y_sound, BLUE);
 
     // display buttons
-    for (int i = 0; i < NUM_BUTTONS; i++) {
+    for (uint i = 0; i < NUM_BUTTONS; i++) {
     	back_button[i]->draw(&tft);
     }
 
@@ -262,8 +329,8 @@ void change_setting(uint32_t arg) {
 	uint16_t x1 = tft.width()/2 ;
     uint16_t y1 = 50 + MARGIN;
     uint16_t size1 = 50;
-    char speed_str[4];
-    char mic_sens_str[4];
+    //char speed_str[4];
+    //char mic_sens_str[4];
 
     // handling the speed variation
 	if (arg==0){ // case "-" pressed
@@ -290,10 +357,11 @@ void change_setting(uint32_t arg) {
 	}
 }
 
+
 /*
  * Display setting menu
  */
-void handleClick_Settings(uint32_t arg=0) {
+void handleClick_Settings(uint32_t arg) {
 
 	//variables
 	bool down = false;
@@ -363,7 +431,7 @@ int main() {
   uint16_t w = tft.width();
   uint16_t h = tft.height();
   uint16_t size = (h - MARGIN*BUTTONS_NUM_LINES) / BUTTONS_NUM_LINES;
-  uint16_t yoff = 5;
+  //uint16_t yoff = 5;
 
   if (my_flash.init() != 0) {
 	  printf("Error initializing flash\n"); // init the flash memory
@@ -371,7 +439,7 @@ int main() {
 
   read_variables(); // read the settings variables
 
-  for (int i = 0; i < NUM_BUTTONS;i++) {
+  for (uint i = 0; i < NUM_BUTTONS;i++) {
     x = MARGIN + (size + MARGIN) * (i % BUTTONS_PER_LINE);
     y = size*i + MARGIN;
     buttons[i] = new Button(menu_Items[i], x, y, w, size);
