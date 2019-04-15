@@ -40,7 +40,9 @@ Button* buttons[NUM_BUTTONS];
 float battery_level = 25;
 int sound_angle = 160;
 
-//int id=0;
+int page_id;
+Timer time_up_sound;
+Timer time_up_battery;
 
 uint32_t settings_address = 0x080FF000;
 
@@ -97,10 +99,39 @@ void save_variables() {
 void handleClick_Settings(uint32_t arg=0);
 
 
+void update_direction(int new_angle){
+	if (page_id==0){ // in case the user is in the home_page
+
+		float sound_angle_rad = (float)sound_angle * 3.14/180;
+		uint16_t circle_radius = 80;
+		uint16_t x_sound1, y_sound1;
+		// screen size
+		uint16_t w = tft.width();
+		uint16_t h = tft.height();
+
+		x_sound1 = w/2 + circle_radius*cos(sound_angle_rad);
+		y_sound1 = h/2 - circle_radius*sin(sound_angle_rad);
+
+		float sound_angle_rad2 = (float)new_angle * 3.14/180;
+		uint16_t x_sound2, y_sound2;
+		// screen size
+
+
+		x_sound2 = w/2 + circle_radius*cos(sound_angle_rad2);
+		y_sound2 = h/2 - circle_radius*sin(sound_angle_rad2);
+
+		tft.drawLine(w/2, h/2, x_sound1, y_sound1, BLACK); // erase the drawn line
+		tft.drawLine(w/2, h/2, x_sound2, y_sound2, RED);
+		printf("direction updated\n");
+	}
+}
+
 /*
  * Display the home page
  */
 void home_page(uint32_t arg=0) {
+	// set page ID
+	page_id = 0;
 
 	// variables
     bool down = false;
@@ -178,10 +209,19 @@ void home_page(uint32_t arg=0) {
    		tft.fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, RED);
    	}
 
-
+   	// start the timer
+	time_up_sound.start();
 
 	// examine if user touch the screen
 	while(true) {
+		// update the direction of the sound
+		if (time_up_sound.read() > 10){
+			update_direction(sound_angle + 45);
+			sound_angle += 45;
+			time_up_sound.reset();
+		}
+
+
 		touch.readTouchData(x, y, down);
 		if (settings_button[0]->handle(x, y, down)) {
 			settings_button[0]->draw(&tft);
@@ -358,6 +398,8 @@ void change_setting(uint32_t arg) {
  * Display setting menu
  */
 void handleClick_Settings(uint32_t arg) {
+	// set page ID
+	page_id = 1;
 
 	//variables
 	bool down = false;
@@ -419,34 +461,11 @@ void handleClick_Settings(uint32_t arg) {
 	}
 }
 
-/*void setPage(int page_id){
-	if (page_id==0){
-		home_page();
-	}else if (page_id==1){
-		handleClick_Settings();
-	}else{
-
-	}
-}*/
-
 
 /******************************************************************************
  * Main
  *****************************************************************************/
 
-/*Ticker time_up;
-DigitalOut myled(LED1);
-
-
-void test(){
-	if (id==0){
-		id = 1;
-	}else{
-		id = 0;
-	}
-	//setPage(id);
-
-}*/
 
 
 int main() {
@@ -458,14 +477,6 @@ int main() {
 
   read_variables(); // read the settings variables
 
-
-
-/*  time_up.attach(&test, 5);
-  //setPage(id);
-  while(1){
-	  printf("%d\n", id);
-	  wait_ms(1000);
-  }*/
 
   home_page();
 
