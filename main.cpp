@@ -37,14 +37,15 @@ DmTouch touch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
 const char* menu_Items[] = {"BATTERY STATUS", "SOUND DIRECTION", "SETTINGS"};
 Button* buttons[NUM_BUTTONS];
 
-float battery_level = 100;
+float battery_level = 20;
 int sound_angle = 160;
 
 uint32_t settings_address = 0x080FF000;
 
-uint32_t back_from_settings = 0;
+uint32_t settings_changed = 0;
 
 uint16_t settings_variables[NUM_SETTINGS_VARIABLES+1];
+
 
 
 /******************************************************************************
@@ -116,7 +117,7 @@ void home_page(uint32_t arg=0) {
 	uint16_t y0_rect = 20;
 	uint16_t x1_rect = 230;
 	uint16_t y1_rect = 30;
-	uint16_t rect_height = y1_rect - y0_rect;
+	uint16_t rect_height = x1_rect - x0_rect;
 
 	// screen size
 	uint16_t w = tft.width();
@@ -134,7 +135,7 @@ void home_page(uint32_t arg=0) {
 
 
     // case back from the settings window ==> need to save the settings
-	if (arg == back_from_settings){
+	if (arg == settings_changed){
 	  save_variables();
 	}
 
@@ -168,20 +169,20 @@ void home_page(uint32_t arg=0) {
    	tft.drawRectangle(x0_rect, y0_rect, x1_rect, y1_rect, WHITE);
    	tft.drawVerticalLine(x0_rect-1, y0_rect+4, 2, WHITE);
    	if (battery_level > 74) {
-   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, GREEN);
+   		tft.fillRectangle(x0_rect + 1 + level_to_pixel, y0_rect+1, x1_rect-1, y1_rect-1, GREEN);
    	}
    	else if (49 < battery_level < 75) {
-   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, YELLOW);
+   		tft.fillRectangle(x0_rect + 1 + level_to_pixel, y0_rect+1, x1_rect-1, y1_rect-1, YELLOW);
 
    	}
    	else if (24 < battery_level < 50) {
-   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, ORANGE);
+   		tft.fillRectangle(x0_rect + 1 + level_to_pixel, y0_rect+1, x1_rect-1, y1_rect-1, RED);
    	}
    	else if (10 < battery_level < 25) {
-   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, RED);
+   		tft.fillRectangle(x0_rect + 1 + level_to_pixel, y0_rect+1, x1_rect-1, y1_rect-1, RED);
    	}
    	else {
-   		tft.fillRectangle(x0_rect+1, y0_rect+1 + level_to_pixel, x1_rect-1, y1_rect-1, BLACK);
+   		tft.fillRectangle(x0_rect + 1 + level_to_pixel, y0_rect+1, x1_rect-1, y1_rect-1, BLACK);
    	}
 
 
@@ -189,7 +190,7 @@ void home_page(uint32_t arg=0) {
 	// examine if user touch the screen
 	while(true) {
 		touch.readTouchData(x, y, down);
-		if (settings_button[0]->handle(x_set, y_set, down)) {
+		if (settings_button[0]->handle(x, y, down)) {
 			settings_button[0]->draw(&tft);
 		}
 	}
@@ -380,7 +381,7 @@ void handleClick_Settings(uint32_t arg) {
 
 	// config the back button
 	settings_buttons[0]= new Button(settings_menu_Items[0], x1, y1, size1, size1);
-	settings_buttons[0]->setAction(home_page, back_from_settings); // back to the home page
+	settings_buttons[0]->setAction(home_page, settings_changed); // back to the home page
 	// config the speed button "-" for the speed
 	settings_buttons[1]= new Button(settings_menu_Items[1], x1+size1+4*MARGIN, y1+size1+MARGIN, size1, size1);
 	settings_buttons[1]->setAction(change_setting, 0); // "0" refers to "-" for the speed button
@@ -454,3 +455,4 @@ int main() {
   home_page();
 
 }
+
