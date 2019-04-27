@@ -18,15 +18,13 @@
 
 #define NUM_SETTINGS_VARIABLES  2
 #define NUM_BUTTONS  6
+#define HOMEPAGE 0
+#define SETTINGSPAGE 1
 
 class DmTft24_363_Display {
 public:
-    enum class pages : char {
-        HomePage            = 0,
-        SettingsPage        = 1
-    };
 
-	DmTft24_363_Display(DmTftIli9341* display_controler, DmTouch* touch_controler, InterruptIn* interrupt, FlashIAP* flash);
+	DmTft24_363_Display();
 
 	~DmTft24_363_Display();
 
@@ -64,8 +62,8 @@ private:
 	bool _settingsChanged;
 	Button* _buttons[NUM_BUTTONS];
 	FlashIAP* _myflash;
-	DmTftIli9341* tft;
-	DmTouch* touch;
+	DmTftIli9341* _tft;
+	DmTouch* _touch;
 	InterruptIn* _touchItr;
 
 };
