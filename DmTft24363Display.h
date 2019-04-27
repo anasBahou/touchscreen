@@ -16,11 +16,19 @@
 #ifndef DMTFT24363DISPLAY_H_
 #define DMTFT24363DISPLAY_H_
 
+#define NUM_SETTINGS_VARIABLES  2
+#define NUM_BUTTONS  6
+
 class DmTft24_363_Display {
 public:
-	DmTft24_363_Display();
+    enum class pages : char {
+        HomePage            = 0,
+        SettingsPage        = 1
+    };
 
-	virtual ~DmTft24_363_Display();
+	DmTft24_363_Display(DmTftIli9341* display_controler, DmTouch* touch_controler, InterruptIn* interrupt, FlashIAP* flash);
+
+	~DmTft24_363_Display();
 
 	void init();
 
@@ -52,12 +60,13 @@ private:
 	int _batteryLevel;
 	int _angle;
 	int _previousAngle;
-	uint16_t _settingsVariables;
+	uint16_t _settingsVariables[NUM_SETTINGS_VARIABLES];
 	bool _settingsChanged;
-	FlashIAP _myflash;
-	DmTftIli9341 _tft;
-	DmTouch _touch;
-	InterruptIn _touchItr;
+	Button* _buttons[NUM_BUTTONS];
+	FlashIAP* _myflash;
+	DmTftIli9341* tft;
+	DmTouch* touch;
+	InterruptIn* _touchItr;
 
 };
 
