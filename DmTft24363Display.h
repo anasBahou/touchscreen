@@ -10,6 +10,7 @@
 #include "DmTouch.h"
 #include "Button.h"
 #include "PinNames.h"
+#include "max17201.h"
 
 #include <stdio.h>
 
@@ -22,6 +23,8 @@
 #define HOMEPAGE 0
 #define SETTINGSPAGE 1
 #define MARGIN  5
+#define HOMEPAGE 0
+#define SETTINGSPAGE 1
 
 class DmTft24_363_Display {
 public:
@@ -44,16 +47,14 @@ public:
 
 	void refresh();
 
+	void homePage();
+
+	void settingsPage();
+
 private:
 	void readSettings();
 
 	void saveSettings();
-
-	void homePage(uint32_t arg);
-
-	void settingsPage();
-
-	void changeSettings(uint32_t arg);
 
 	void itrFunc();
 
@@ -64,12 +65,15 @@ private:
 	int _previousAngle;
 	uint16_t _settingsVariables[NUM_SETTINGS_VARIABLES];
 	uint32_t _settingsAddress = 0x080FF000;
-	bool _settingsChanged;
+	bool _speedChanged;
+	bool _micSensChanged;
 	Button* _buttons[NUM_BUTTONS];
 	FlashIAP* _myflash;
 	DmTftIli9341* _tft;
 	DmTouch* _touch;
 	InterruptIn* _touchItr;
+	I2C* _i2c;
+	sixtron::MAX17201* _battery;
 
 };
 
