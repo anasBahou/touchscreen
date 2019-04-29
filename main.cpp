@@ -33,6 +33,8 @@
 FlashIAP my_flash;
 DmTftIli9341 tft(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
 DmTouch touch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
+InterruptIn touch_pin(DIO4);
+DigitalOut led1(LED1);
 
 const char* menu_Items[] = {"BATTERY STATUS", "SOUND DIRECTION", "SETTINGS"};
 Button* buttons[NUM_BUTTONS];
@@ -126,6 +128,13 @@ void update_direction(int new_angle){
 	}
 }
 
+void rise() {
+	led1 = 1;
+}
+void fall() {
+	led1 = 0;
+}
+
 /*
  * Display the home page
  */
@@ -208,6 +217,9 @@ void home_page(uint32_t arg=0) {
    	}else {
    		tft.fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, RED);
    	}
+
+   	touch_pin.rise(rise);
+   	touch_pin.fall(fall);
 
    	// start the timer
 	time_up_sound.start();
@@ -466,10 +478,15 @@ void handleClick_Settings(uint32_t arg) {
  * Main
  *****************************************************************************/
 
+void test()
+{
+
+}
 
 
 int main() {
 
+	Ticker ticker;
 
   if (my_flash.init() != 0) {
 	  printf("Error initializing flash\n"); // init the flash memory
