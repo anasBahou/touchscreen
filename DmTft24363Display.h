@@ -10,6 +10,7 @@
 #include "DmTouch.h"
 #include "Button.h"
 #include "PinNames.h"
+#include "max17201.h"
 
 #include <stdio.h>
 
@@ -53,18 +54,24 @@ private:
 
 	void changeSettings();
 
+	void itrFunc();
+
 
 	int _pageID;
 	int _batteryLevel;
 	int _angle;
 	int _previousAngle;
 	uint16_t _settingsVariables[NUM_SETTINGS_VARIABLES];
-	bool _settingsChanged;
+	bool _speedChanged;
+	bool _micSensChanged;
 	Button* _buttons[NUM_BUTTONS];
 	FlashIAP* _myflash;
 	DmTftIli9341* _tft;
 	DmTouch* _touch;
 	InterruptIn* _touchItr;
+	I2C* _i2c;
+	sixtron::MAX17201* _battery;
+
 
 };
 
