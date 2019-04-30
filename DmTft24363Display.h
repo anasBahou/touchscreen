@@ -33,8 +33,6 @@ public:
 
 	void setID(int pageID);
 
-	void setBatteryLevel();
-
 	void setAngle(int angle);
 
 	void refreshBatteryLevel();
@@ -47,6 +45,8 @@ public:
 
 	void settingsPage();
 
+	void handleTouchEvent();
+
 private:
 	void readSettings();
 
@@ -56,8 +56,6 @@ private:
 
 	//void settingsPage();
 
-	void changeSettings();
-
 	void itrFunc();
 
 
@@ -66,6 +64,7 @@ private:
 	int _angle;
 	int _previousAngle;
 	uint16_t _settingsVariables[NUM_SETTINGS_VARIABLES];
+	uint32_t _settingsAddress;
 	bool _speedChanged;
 	bool _micSensChanged;
 	Button* _buttons[NUM_BUTTONS];
@@ -75,7 +74,8 @@ private:
 	InterruptIn* _touchItr;
 	I2C* _i2c;
 	sixtron::MAX17201* _battery;
-
+	DigitalOut* _led;
+	EventQueue* _queue;
 
 };
 

@@ -41,11 +41,16 @@ int main() {
 	printf("start main\n\n");
 	DmTft24_363_Display* myTouchscreen;
 	myTouchscreen = new DmTft24_363_Display();
+
 	myTouchscreen->init();
-	myTouchscreen->setID(HOMEPAGE);
-	myTouchscreen->setBatteryLevel();
+
 	myTouchscreen->homePage();
-	//myTouchscreen->settingsPage();
+
+	while(1) {
+		myTouchscreen->refresh();
+		wait_ms(1000);
+	}
+
 	printf("end main\n\n");
 
 
