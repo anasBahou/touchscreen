@@ -33,7 +33,7 @@ public:
 
 	void setID(int pageID);
 
-	void setBatteryLevel(int batteryLevel);
+	void setBatteryLevel();
 
 	void setAngle(int angle);
 
@@ -43,14 +43,18 @@ public:
 
 	void refresh();
 
+	void homePage();
+
+	void settingsPage();
+
 private:
 	void readSettings();
 
 	void saveSettings();
 
-	void homePage();
+	//void homePage();
 
-	void settingsPage();
+	//void settingsPage();
 
 	void changeSettings();
 
@@ -58,7 +62,7 @@ private:
 
 
 	int _pageID;
-	int _batteryLevel;
+	float _batteryLevel;
 	int _angle;
 	int _previousAngle;
 	uint16_t _settingsVariables[NUM_SETTINGS_VARIABLES];
