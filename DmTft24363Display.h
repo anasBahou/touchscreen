@@ -27,6 +27,8 @@ public:
 
 	DmTft24_363_Display();
 
+	DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmTouch* touch, InterruptIn* touchItr, I2C* i2c);
+
 	~DmTft24_363_Display();
 
 	void init();
@@ -60,6 +62,7 @@ private:
 
 
 	int _pageID;
+	bool _changePage;
 	float _batteryLevel;
 	int _angle;
 	int _previousAngle;
@@ -74,7 +77,6 @@ private:
 	InterruptIn* _touchItr;
 	I2C* _i2c;
 	sixtron::MAX17201* _battery;
-	DigitalOut* _led;
 	EventQueue* _queue;
 
 };
