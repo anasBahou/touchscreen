@@ -10,19 +10,27 @@
 #include "DmTouch.h"
 #include "Button.h"
 #include "PinNames.h"
+#include "max17201.h"
+#include "DmTft24363Display.h"
 
 #include <stdio.h>
 #include <math.h>
-#include <DmTft24363Display.h>
+
 
 using namespace sixtron;
 
 DmTft24_363_Display::DmTft24_363_Display() {
 
+	printf("Creation of DmTft24_363_Display...\n");
+
+	_queue = mbed_event_queue();
+
 	_pageID = HOMEPAGE;
+	_changePage = 0;
 	_batteryLevel = 0;
-	_angle = 0;
+	_angle = 90;
 	_previousAngle = 0;
+
 
 	for (int i = 0 ; i < NUM_SETTINGS_VARIABLES ; i++) {
 		_settingsVariables[i] = 0;
@@ -31,14 +39,17 @@ DmTft24_363_Display::DmTft24_363_Display() {
 	_speedChanged  = false;
 	_micSensChanged = false;
 
+	_settingsAddress = 0x080FF000;
+
 	_myflash = new FlashIAP;
 	_tft = new DmTftIli9341(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
 	_touch = new DmTouch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_SCK);
 	_touchItr = new InterruptIn(DIO4);
 	_i2c = new I2C(I2C1_SDA, I2C1_SCL);
-	_battery = new MAX17201(&_i2c);
+	_battery = new MAX17201(_i2c);
+	_led = new DigitalOut(LED1);
 
-	printf("DmTft24_363_Display created");
+	printf("... completed ! \n\n");
 
 }
 
@@ -48,42 +59,123 @@ DmTft24_363_Display::~DmTft24_363_Display() {
 
 }
 
+void  DmTft24_363_Display::handleTouchEvent()
+{
+	*_led = 1;
+
+	//variables
+	bool down = false;
+	uint16_t x = 0;
+	uint16_t y = 0;
+
+	_touchItr->disable_irq();
+
+	// read touch data
+	_touch->readTouchData(x, y, down);
+	printf("coordinates : %d, %d\n", x, y);
+	for (int i = 0; i < 6; i++) {
+		if (_buttons[i]->handle(x, y, true)) {
+			switch(i){
+				case 0: // settings button
+					_pageID = SETTINGSPAGE;
+					_changePage = 1;
+					break;
+				case 1: // back button
+					_pageID = HOMEPAGE;
+					_changePage = 1;
+					break;
+				case 2: // case "-" pressed
+					if (_pageID == SETTINGSPAGE){
+						_speedChanged = 1; // the settings were changed
+						_settingsVariables[0]--; // _settingsVariables[0] <=> speed variable
+					}
+					break;
+				case 3: // case "+" pressed
+					if (_pageID == SETTINGSPAGE){
+						_speedChanged = 1; // the settings were changed
+						_settingsVariables[0]++;
+					}
+					break;
+				case 4: // case "-" pressed
+					if (_pageID == SETTINGSPAGE){
+						_micSensChanged = 1; // the settings were changed
+						_settingsVariables[1]--; // _settingsVariables[1] <=> Mic_sense variable
+					}
+					break;
+				case 5: // case "+" pressed
+					if (_pageID == SETTINGSPAGE){
+						_micSensChanged = 1; // the settings were changed
+						_settingsVariables[1]++;
+					}
+					break;
+
+			}
+		}
+	}
+	_touchItr->enable_irq();
+}
+
+void DmTft24_363_Display::itrFunc() {
+	_queue->call(callback(this, &DmTft24_363_Display::handleTouchEvent));
+	*_led = !*_led;
+	printf("hello\n");
+}
+
 void DmTft24_363_Display::init() {
 
-	// BUTTONS
+	printf("Initialization...\n");
 
-	// settings
-	_buttons[0] = new Button("settings", 0, 0, 100, 50);
-	// back
-	_buttons[1] = new Button("back", 0, 0, 50, 50);
-	// "-" speed
-	_buttons[2] = new Button("-", 70, 55, 50, 50);
-	// "+" speed
-	_buttons[3] = new Button("+", 285, 55, 50, 50);
-	// "-" mic_sens
-	_buttons[4] = new Button("-", 70, 110, 50, 50);
-	// "+" mi_sens7
-	_buttons[5] = new Button("+", 285, 110, 50, 50);
+	/*
+	 * OBJECT INITILIZATION
+	 */
+	_tft->init(); // screen initialization
+	_touch->init(); // touch controller initialization
+	_myflash->init(); // flash memory initialization
+	_touchItr->fall(callback(this, &DmTft24_363_Display::itrFunc)); // set up the function linked to the interruption
+	_battery->configure(1, 800, 3.3, false, false);
 
-	// set up the interruption
-	_touchItr->fall(DmTft24_363_Display::itrFunc);
+	/*
+	 * BUTTONS INITILIZATION
+	 */
+	_buttons[0] = new Button("settings", 0, 0, 100, 50); // settings button initialization
+	_buttons[1] = new Button("back", 0, 0, 50, 50); // back button initialization
+	_buttons[2] = new Button("-", 70, 55, 50, 50); // "-" speed button initialization
+	_buttons[3] = new Button("+", 190, 55, 50, 50); // "+" speed button initialization
+	_buttons[4] = new Button("-", 70, 110, 50, 50); // "-" mic_sens button initialization
+	_buttons[5] = new Button("+", 190, 110, 50, 50); // // "+" mi_sens button initialization
+
+	/*
+	 * LEVEL BATTERY INITIALIZATION
+	 */
+	 wait_ms(1000); // wait for battery configuration
+	 _batteryLevel = _battery->state_of_charge();
+
+	printf("... completed !\n\n");
 
 }
 
 void DmTft24_363_Display::setID(int pageID) {
-	_pageID = pageID;
-}
 
-void DmTft24_363_Display::setBatteryLevel(int batteryLevel) {
-	_batteryLevel = batteryLevel;
+	printf("Set pageID...\n");
+	_pageID = pageID;
+	printf("... completed !\n\n");
+
 }
 
 void DmTft24_363_Display::setAngle(int angle) {
+
+	printf("Setting angle...\n");
 	_previousAngle = _angle;
 	_angle = angle;
+	printf("... completed !\n\n");
+
 }
 
 void DmTft24_363_Display::refreshBatteryLevel() {
+
+	printf("Refreshing batteryLevel...\n");
+
+	_batteryLevel = _battery->state_of_charge();
 
 	// variables display battery
 	uint16_t x0_rect = 200;
@@ -92,38 +184,38 @@ void DmTft24_363_Display::refreshBatteryLevel() {
 	uint16_t y1_rect = 30;
 	uint16_t rect_width = x1_rect -1 - (x0_rect +1) ; // -/+ 1 to avoid the pixels of the white rectangle
 
-	// screen size
-	uint16_t w = _tft->width();
-	uint16_t h = _tft->height();
-
 	// battery
-	uint8_t battery_level_int = (uint8_t)_batteryLevel;
 	uint16_t level_to_pixel = (uint16_t)((_batteryLevel/100)*rect_width); // conversion to an integer
-	uint16_t new_level_to_pixel = (uint16_t)((_battery->state_of_charge()/100)*rect_width); // conversion to an integer
 
 	// erase the existing value
-	_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, BLACK);
-	_tft->fillRectangle(200 , 0 , 260, 20, BLACK); // erase the text <=> battery level
+	_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + rect_width, y1_rect-1, BLACK);
+	_tft->fillRectangle(200 , 0 , 260, 16, BLACK); // erase the text <=> battery level
 
 	// level to string
 	char battery_level_str[6];
-	sprintf(battery_level_str, "%d%s", _battery->state_of_charge(), "%"); // to convert battery_level to a string of a format "70.0 %"
+	sprintf(battery_level_str, "%.0f%s", _batteryLevel, "%"); // to convert battery_level to a string of a format "70.0 %"
 
 	// draw the string
 	_tft->drawString(200, 0, battery_level_str);
 
-	if (_batteryLevel > 74) {
-		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + new_level_to_pixel, y1_rect-1, GREEN);
+	if (_batteryLevel > 66) {
+		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, GREEN);
 	}
-	else if ((20 < _batteryLevel)&&( _batteryLevel < 75)) {
-		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + new_level_to_pixel, y1_rect-1, YELLOW);
+	else if ( (33 < _batteryLevel) && (_batteryLevel < 67) ) {
+		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, YELLOW);
 
 	}else {
-		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + new_level_to_pixel, y1_rect-1, RED);
+		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, RED);
 	}
+
+	printf("... completed !\n\n");
+
 }
 
 void DmTft24_363_Display::refreshAngle() {
+
+	printf("Refreshing angle...\n");
+
 	if (_pageID==0){ // in case the user is in the home_page
 
 		float sound_angle_rad = (float)_previousAngle * 3.14/180;
@@ -145,40 +237,57 @@ void DmTft24_363_Display::refreshAngle() {
 		y_sound2 = h/2 - circle_radius*sin(sound_angle_rad2);
 
 		_tft->drawLine(w/2, h/2, x_sound1, y_sound1, BLACK); // erase the drawn line
+		_tft->drawPoint(x_sound1, y_sound1);
 		_tft->drawLine(w/2, h/2, x_sound2, y_sound2, RED);
 		printf("direction updated\n");
 	}
+
+	printf("... completed !\n\n");
+
 }
 
 void DmTft24_363_Display::refresh() {
+
 	if (_pageID==HOMEPAGE){ // in case the user is in the home_page
+		if (_changePage ==1){
+			homePage();
+		}
 		refreshAngle();
 		refreshBatteryLevel();
-	}else if(_pageID==SETTINGSPAGE){
+
+	}
+	else if(_pageID==SETTINGSPAGE){
+		if (_changePage ==1){
+			settingsPage();
+		}
 		// varibales
 		uint16_t x1 = _tft->width()/2 ;
-		uint16_t y1 = 50 + MARGIN;
+		uint16_t y1 = 55;
 		uint16_t size1 = 50;
 		if (_speedChanged==1){ // redraw the speed value
-			_tft->fillRectangle(x1 + MARGIN, y1, x1+size1, y1+size1, BLACK);
+			_tft->fillRectangle(x1 + 5, y1, x1+size1, y1+size1, BLACK);
 			_tft->drawNumber(x1 , y1, _settingsVariables[0], 3, false); //  _settingsVariables[0] <=> speed variable
 		}
 		if (_micSensChanged==1){ // redraw the mic_sens value
-			_tft->fillRectangle(x1+MARGIN, 2*y1, x1+size1, 2*y1+size1, BLACK);
+			_tft->fillRectangle(x1+5, 2*y1, x1+size1, 2*y1+size1, BLACK);
 			_tft->drawNumber(x1 , 2*y1, _settingsVariables[1], 3, false); // _settingsVariables[1] <=> Mic_sense variable
 		}
 	}
+
 }
 
 void DmTft24_363_Display::readSettings() {
+
 	// read blocs from flash memory
 	_myflash->read(_settingsVariables , _settingsAddress, _myflash->get_page_size());
 
 	printf("speed : %d\n", _settingsVariables[0]);
 	printf("mic_sens : %d\n", _settingsVariables[1]);
+
 }
 
 void DmTft24_363_Display::saveSettings() {
+
 	// erase blocks on flash memory
 	_myflash->erase(_settingsAddress, _myflash->get_sector_size(_settingsAddress));
 	// program blocks
@@ -188,57 +297,22 @@ void DmTft24_363_Display::saveSettings() {
 	printf("Settings saved \n");
 	printf("Saved speed : %d\n", _settingsVariables[0]);
 	printf("Saved mic_sens : %d\n", _settingsVariables[1]);
-}
 
-void DmTft24_363_Display::itrFunc(){
-	//variables
-	bool down = false;
-	uint16_t x = 0;
-	uint16_t y = 0;
-	// read touch data
-	_touch->readTouchData(x, y, down);
-	for (int i = 0; i < 6; i++) {
-		if (_buttons[i]->handle(x, y, down)) {
-			_buttons[i]->draw(_tft);
-			switch(i){
-				case 0: // settings button
-					_pageID = SETTINGSPAGE;
-					break;
-				case 1: // back button
-					_pageID = HOMEPAGE;
-					break;
-				case 2: // case "-" pressed
-					_speedChanged = 1; // the settings were changed
-					_settingsVariables[0]--; // _settingsVariables[0] <=> speed variable
-					break;
-				case 3: // case "+" pressed
-					_speedChanged = 1; // the settings were changed
-					_settingsVariables[0]++;
-					break;
-				case 4: // case "-" pressed
-					_micSensChanged = 1; // the settings were changed
-					_settingsVariables[1]--; // _settingsVariables[1] <=> Mic_sense variable
-					break;
-				case 5: // case "+" pressed
-					_micSensChanged = 1; // the settings were changed
-					_settingsVariables[1]++;
-					break;
-
-			}
-		}
-	}
 }
 
 void DmTft24_363_Display::homePage() {
-	// set page ID
-	_pageID = HOMEPAGE;
+
+	printf("Home page...\n");
+
+	// reset the changePage variable
+	_changePage = 0;
 
 	// variables display battery
 	uint16_t x0_rect = 200;
 	uint16_t y0_rect = 20;
 	uint16_t x1_rect = 230;
 	uint16_t y1_rect = 30;
-	uint16_t rect_width = x1_rect -1 - (x0_rect +1) ; // -/+ 1 to avoid the pixels of the white rectangle
+	uint16_t rect_width = x1_rect -1 - (x0_rect + 1) ; // -/+ 1 to avoid the pixels of the white rectangle
 
 	// screen size
 	uint16_t w = _tft->width();
@@ -249,7 +323,7 @@ void DmTft24_363_Display::homePage() {
 	  saveSettings();
 	}
 
-	// display
+	// display settings button
 	_buttons[0]->draw(_tft);
 
 	// get the sound direction
@@ -262,11 +336,9 @@ void DmTft24_363_Display::homePage() {
 
 
 	// battery
-	uint8_t battery_level_int = (uint8_t)_batteryLevel;
-	uint16_t level_to_pixel = (uint16_t)((_batteryLevel/100)*rect_width); // conversion to an integer
+	uint16_t level_to_pixel = (uint16_t)((_batteryLevel/100)*rect_width);
 	char battery_level_str[6];
-	const char percent[] = "%";
-	sprintf(battery_level_str, "%d%s", battery_level_int, percent); // to convert battery_level to a string of a format "70.0 %"
+	sprintf(battery_level_str, "%.0f%s", _batteryLevel, "%"); // to convert battery_level to a string of a format "70.0 %"
 
 	// display direction
 	_tft->drawCircle(w/2, h/2, circle_radius, WHITE);
@@ -277,39 +349,40 @@ void DmTft24_363_Display::homePage() {
 	_tft->drawString(200, 0, battery_level_str);
 	_tft->drawRectangle(x0_rect, y0_rect, x1_rect, y1_rect, WHITE);
 	_tft->drawVerticalLine(x1_rect+1, y0_rect+4, 2, WHITE);
-	if (_batteryLevel > 74) {
+
+	if (_batteryLevel > 66) {
 		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, GREEN);
 	}
-	else if ((20 < _batteryLevel)&&( _batteryLevel < 75)) {
+	else if ( (33 < _batteryLevel) && (_batteryLevel < 67) ) {
 		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, YELLOW);
 
-	}else {
+	}
+	else {
 		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, RED);
 	}
+
+	printf("... completed ! \n\n");
 
 }
 
 void DmTft24_363_Display::settingsPage() {
-	// set page ID
-	_pageID = SETTINGSPAGE;
 
-	// parameters for back button
-	uint16_t size1 = 50;
+	printf("Settings page...\n");
 
-	// initialization
-	_tft->init();
-	_touch->init();
+	// reset the changePage variable
+	_changePage = 0;
 
 	// display
-	_tft->drawString(0, size1 + MARGIN, "Speed :");
-	_tft->drawNumber(_tft->width()/2 , size1 + MARGIN, _settingsVariables[0], 3, false); //  _settingsVariables[0] <=> speed variable
-	_tft->drawString(0, 2*(size1 + MARGIN), "Mic_Sens:");
-	_tft->drawNumber(_tft->width()/2 , 2*(size1+MARGIN), _settingsVariables[1], 3, false); //  _settingsVariables[1] <=> mic_sens variable
+	_tft->drawString(0, 70, "Speed");
+	_tft->drawNumber(135 , 70, _settingsVariables[0], 3, false); //  _settingsVariables[0] <=> speed variable
+	_tft->drawString(0, 125, "Mic Sens");
+	_tft->drawNumber(135 , 125, _settingsVariables[1], 3, false); //  _settingsVariables[1] <=> mic_sens variable
 
 	// display buttons
 	for (int i = 1; i < 6; i++) {
 		_buttons[i]->draw(_tft);
 	}
 
-}
+	printf("... completed ! \n\n");
 
+}

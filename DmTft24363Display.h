@@ -18,11 +18,7 @@
 #define DMTFT24363DISPLAY_H_
 
 #define NUM_SETTINGS_VARIABLES  2
-#define NUM__settingsVariables  2
 #define NUM_BUTTONS  6
-#define HOMEPAGE 0
-#define SETTINGSPAGE 1
-#define MARGIN  5
 #define HOMEPAGE 0
 #define SETTINGSPAGE 1
 
@@ -37,8 +33,6 @@ public:
 
 	void setID(int pageID);
 
-	void setBatteryLevel(int batteryLevel);
-
 	void setAngle(int angle);
 
 	void refreshBatteryLevel();
@@ -51,20 +45,27 @@ public:
 
 	void settingsPage();
 
+	void handleTouchEvent();
+
 private:
 	void readSettings();
 
 	void saveSettings();
 
+	//void homePage();
+
+	//void settingsPage();
+
 	void itrFunc();
 
 
 	int _pageID;
-	int _batteryLevel;
+	int _changePage;
+	float _batteryLevel;
 	int _angle;
 	int _previousAngle;
 	uint16_t _settingsVariables[NUM_SETTINGS_VARIABLES];
-	uint32_t _settingsAddress = 0x080FF000;
+	uint32_t _settingsAddress;
 	bool _speedChanged;
 	bool _micSensChanged;
 	Button* _buttons[NUM_BUTTONS];
@@ -74,6 +75,8 @@ private:
 	InterruptIn* _touchItr;
 	I2C* _i2c;
 	sixtron::MAX17201* _battery;
+	DigitalOut* _led;
+	EventQueue* _queue;
 
 };
 
