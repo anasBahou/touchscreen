@@ -26,7 +26,7 @@ DmTft24_363_Display::DmTft24_363_Display() {
 	_pageID = HOMEPAGE;
 	_changePage = 0;
 	_batteryLevel = 0;
-	_angle = 90;
+	_angle = 0;
 	_previousAngle = 0;
 	for (int i = 0 ; i < NUM_SETTINGS_VARIABLES ; i++) {
 		_settingsVariables[i] = 0;
@@ -42,7 +42,7 @@ DmTft24_363_Display::DmTft24_363_Display() {
 	_battery = new MAX17201(_i2c);
 	_queue = mbed_event_queue();
 
-	printf("... completed ! \n\n");
+	printf("... completed \n\n");
 
 }
 
@@ -52,14 +52,14 @@ DmTft24_363_Display::DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmT
 
 	_pageID = HOMEPAGE;
 	_changePage = 0;
+	_speedChanged  = false;
+	_micSensChanged = false;
 	_batteryLevel = 0;
-	_angle = 90;
+	_angle = 0;
 	_previousAngle = 0;
 	for (int i = 0 ; i < NUM_SETTINGS_VARIABLES ; i++) {
 		_settingsVariables[i] = 0;
 	}
-	_speedChanged  = false;
-	_micSensChanged = false;
 	_settingsAddress = 0x080FF000;
 	_myflash = flash;
 	_tft = tft;
@@ -69,7 +69,7 @@ DmTft24_363_Display::DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmT
 	_battery = new MAX17201(_i2c);
 	_queue = mbed_event_queue();
 
-	printf("... completed ! \n\n");
+	printf("... completed \n\n");
 
 }
 
@@ -149,7 +149,7 @@ void DmTft24_363_Display::init() {
 	_touch->init(); // touch controller initialization
 	_myflash->init(); // flash memory initialization
 	_touchItr->fall(callback(this, &DmTft24_363_Display::itrFunc)); // set up the function linked to the interruption
-	_battery->configure(1, 800, 3.3, false, false);
+	_battery->configure(1, 800, 3.3, false, false); //battery configuration
 
 	/*
 	 * BUTTONS INITILIZATION
@@ -172,7 +172,7 @@ void DmTft24_363_Display::init() {
 	  */
 	 readSettings();
 
-	printf("...completed !\n\n");
+	printf("...completed\n\n");
 
 }
 
@@ -180,7 +180,7 @@ void DmTft24_363_Display::setID(int pageID) {
 
 	printf("Set pageID...\n");
 	_pageID = pageID;
-	printf("...completed !\n\n");
+	printf("...completed\n\n");
 
 }
 
@@ -189,7 +189,7 @@ void DmTft24_363_Display::setAngle(int angle) {
 	printf("Setting angle...\n");
 	_previousAngle = _angle;
 	_angle = angle;
-	printf("...completed !\n\n");
+	printf("...completed\n\n");
 
 }
 
@@ -292,7 +292,7 @@ void DmTft24_363_Display::refresh() {
 		}
 	}
 
-	printf("...completed !\n\n");
+	printf("...completed\n\n");
 
 }
 
@@ -380,13 +380,15 @@ void DmTft24_363_Display::homePage() {
 		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, RED);
 	}
 
-	printf("...completed ! \n\n");
+	printf("...completed\n\n");
 
 }
 
 void DmTft24_363_Display::settingsPage() {
 
 	_changePage = 0;
+	_speedChanged = 0;
+	_micSensChanged = 0;
 
 	printf("Settings page...");
 
@@ -401,6 +403,6 @@ void DmTft24_363_Display::settingsPage() {
 		_buttons[i]->draw(_tft);
 	}
 
-	printf("...completed ! \n\n");
+	printf("...completed\n\n");
 
 }

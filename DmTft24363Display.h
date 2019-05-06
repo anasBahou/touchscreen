@@ -79,6 +79,7 @@ private:
 	sixtron::MAX17201* _battery;
 	EventQueue* _queue;
 
+
 };
 
 #endif /* DMTFT24363DISPLAY_H_ */
