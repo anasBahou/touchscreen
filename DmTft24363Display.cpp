@@ -5,17 +5,7 @@
  *      Author: sixtron-training
  */
 
-#include "mbed.h"
-#include "DmTftIli9341.h"
-#include "DmTouch.h"
-#include "Button.h"
-#include "PinNames.h"
-#include "max17201.h"
 #include "DmTft24363Display.h"
-
-#include <stdio.h>
-#include <math.h>
-
 
 using namespace sixtron;
 
@@ -81,74 +71,62 @@ DmTft24_363_Display::~DmTft24_363_Display() {
 
 void  DmTft24_363_Display::handleTouchEvent()
 {
-	//_touchItr->disable_irq();
-
-	//variables
-	bool down = false;
-	uint16_t x = 0;
-	uint16_t y = 0;
 
 	_queue->call_in(200, callback(_touchItr, &InterruptIn::enable_irq));
 
-	// read touch data
-	_touch->readTouchData(x, y, down);
-	printf("Coordinates read %d %d\n", x, y);
-	for (int i = 0; i < 6; i++) {
-		if (_buttons[i]->handle(x, y, down)) {
-			switch(i){
-				case 0: // settings button
-					printf("case 0\n");
-					if (_pageID == HOMEPAGE) {
-						_pageID = SETTINGSPAGE;
-						_changePage = 1;
-						return;
-					}
-					break;
-				case 1: // back button
-					printf("case 1\n");
-					if (_pageID == SETTINGSPAGE) {
-						_pageID = HOMEPAGE;
-						_changePage = 1;
-						return;
-					}
-					break;
-				case 2: // case "-" pressed
-					printf("case 2\n");
-					if (_pageID == SETTINGSPAGE){
-						_speedChanged = 1; // the settings were changed
-						_settingsVariables[0]--; // _settingsVariables[0] <=> speed variable
-						return;
-					}
-					break;
-				case 3: // case "+" pressed
-					printf("case 3\n");
-					if (_pageID == SETTINGSPAGE){
-						_speedChanged = 1; // the settings were changed
-						_settingsVariables[0]++;
-						return;
-					}
-					break;
-				case 4: // case "-" pressed
-					printf("case 4\n");
-					if (_pageID == SETTINGSPAGE){
-						_micSensChanged = 1; // the settings were changed
-						_settingsVariables[1]--; // _settingsVariables[1] <=> Mic_sense variable
-						return;
-					}
-					break;
-				case 5: // case "+" pressed
-					printf("case 5\n");
-					if (_pageID == SETTINGSPAGE){
-						_micSensChanged = 1; // the settings were changed
-						_settingsVariables[1]++;
-						return;
-					}
-					break;
-			}
+	uint8_t which;
+
+	if ( _pageID == HOMEPAGE ) {
+		if ( GraphObjectTouched(_buttons, NUM_BUTTONS, &which) == GO_STATUS_NOERR ) {
+			_changePage = true;
+			_pageID = SETTINGSPAGE;
+			_buttons[SETTINGS].TouchActive = false;
+			return;
 		}
 	}
-	//_touchItr->enable_irq();
+
+	else if ( _pageID == SETTINGSPAGE ) {
+		if ( GraphObjectTouched(_buttons, NUM_BUTTONS, &which) == GO_STATUS_NOERR) {
+			if ( which == BACK ) {
+				_changePage = true;
+				_pageID = HOMEPAGE;
+				_buttons[BACK].TouchActive = false;
+				_buttons[SPEED_MINUS].TouchActive = false;
+				_buttons[SPEED_PLUS].TouchActive = false;
+				_buttons[MIC_SENS_MINUS].TouchActive = false;
+				_buttons[MIC_SENS_PLUS].TouchActive = false;
+				return;
+			}
+
+			else if ( which == SPEED_MINUS ) {
+				_speedChanged = true;
+				_settingsVariables[SPEED]--;
+				return;
+			}
+
+			else if ( which == SPEED_PLUS ) {
+				_speedChanged = true;
+				_settingsVariables[SPEED]++;
+				return;
+			}
+
+			else if ( which == MIC_SENS_MINUS ) {
+				_speedChanged = true;
+				_settingsVariables[MIC_SENS]--;
+				return;
+			}
+
+			else if ( which == MIC_SENS_PLUS ) {
+				_speedChanged = true;
+				_settingsVariables[MIC_SENS]++;
+				return;
+			}
+
+		}
+	}
+
 }
+
 
 void DmTft24_363_Display::itrFunc() {
 	_touchItr->disable_irq();
@@ -172,12 +150,77 @@ void DmTft24_363_Display::init() {
 	/*
 	 * BUTTONS INITILIZATION
 	 */
-	_buttons[0] = new Button("settings", 0, 0, 100, 50); // settings button initialization
-	_buttons[1] = new Button("back", 0, 0, 50, 50); // back button initialization
-	_buttons[2] = new Button("-", 70, 55, 50, 50); // "-" speed button initialization
-	_buttons[3] = new Button("+", 190, 55, 50, 50); // "+" speed button initialization
-	_buttons[4] = new Button("-", 70, 110, 50, 50); // "-" mic_sens button initialization
-	_buttons[5] = new Button("+", 190, 110, 50, 50); // // "+" mi_sens button initialization
+	// settings button initialization
+	_buttons[SETTINGS].Id = SETTINGS;
+	_buttons[SETTINGS].Type = GO_RECTANGLE;
+	_buttons[SETTINGS].Xpos = 0;
+	_buttons[SETTINGS].Ypos = 0;
+	_buttons[SETTINGS].Width = 100;
+	_buttons[SETTINGS].Height = 50;
+	_buttons[SETTINGS].FrontColor = WHITE; //color of borders
+	_buttons[SETTINGS].DoFill = true;
+	_buttons[SETTINGS].FillColor = BLACK;
+	_buttons[SETTINGS].TouchActive = false;
+
+	// back button initialization
+	_buttons[BACK].Id = BACK;
+	_buttons[BACK].Type = GO_RECTANGLE;
+	_buttons[BACK].Xpos = 0;
+	_buttons[BACK].Ypos = 0;
+	_buttons[BACK].Width = 50;
+	_buttons[BACK].Height = 50;
+	_buttons[BACK].FrontColor = WHITE; //color of borders
+	_buttons[BACK].DoFill = true;
+	_buttons[BACK].FillColor = BLACK;
+	_buttons[BACK].TouchActive = false;
+
+	// "-" speed button initialization
+	_buttons[SPEED_MINUS].Id = SPEED_MINUS;
+	_buttons[SPEED_MINUS].Type = GO_RECTANGLE;
+	_buttons[SPEED_MINUS].Xpos = 70;
+	_buttons[SPEED_MINUS].Ypos =55;
+	_buttons[SPEED_MINUS].Width = 50;
+	_buttons[SPEED_MINUS].Height = 50;
+	_buttons[SPEED_MINUS].FrontColor = WHITE; //color of borders
+	_buttons[SPEED_MINUS].DoFill = true;
+	_buttons[SPEED_MINUS].FillColor = BLACK;
+	_buttons[SPEED_MINUS].TouchActive = false;
+
+	// "+" speed button initialization
+	_buttons[SPEED_PLUS].Id = SPEED_PLUS,
+	_buttons[SPEED_PLUS].Type = GO_RECTANGLE;
+	_buttons[SPEED_PLUS].Xpos = 190;
+	_buttons[SPEED_PLUS].Ypos =55;
+	_buttons[SPEED_PLUS].Width = 50;
+	_buttons[SPEED_PLUS].Height = 50;
+	_buttons[SPEED_PLUS].FrontColor = WHITE; //color of borders
+	_buttons[SPEED_PLUS].DoFill = true;
+	_buttons[SPEED_PLUS].FillColor = BLACK;
+	_buttons[SPEED_PLUS].TouchActive = false;
+
+	// "-" mic_sens button initialization
+	_buttons[MIC_SENS_MINUS].Id = MIC_SENS_MINUS;
+	_buttons[MIC_SENS_MINUS].Type = GO_RECTANGLE;
+	_buttons[MIC_SENS_MINUS].Xpos = 70;
+	_buttons[MIC_SENS_MINUS].Ypos =110;
+	_buttons[MIC_SENS_MINUS].Width = 50;
+	_buttons[MIC_SENS_MINUS].Height = 50;
+	_buttons[MIC_SENS_MINUS].FrontColor = WHITE; //color of borders
+	_buttons[MIC_SENS_MINUS].DoFill = true;
+	_buttons[MIC_SENS_MINUS].FillColor = BLACK;
+	_buttons[MIC_SENS_MINUS].TouchActive = false;
+
+	// "+" mi_sens button initialization
+	_buttons[MIC_SENS_PLUS].Id = MIC_SENS_PLUS;
+	_buttons[MIC_SENS_PLUS].Type = GO_RECTANGLE;
+	_buttons[MIC_SENS_PLUS].Xpos = 70;
+	_buttons[MIC_SENS_PLUS].Ypos =110;
+	_buttons[MIC_SENS_PLUS].Width = 50;
+	_buttons[MIC_SENS_PLUS].Height = 50;
+	_buttons[MIC_SENS_PLUS].FrontColor = WHITE; //color of borders
+	_buttons[MIC_SENS_PLUS].DoFill = true;
+	_buttons[MIC_SENS_PLUS].FillColor = BLACK;
+	_buttons[MIC_SENS_PLUS].TouchActive = false;
 
 	/*
 	 * LEVEL BATTERY INITIALIZATION
@@ -283,6 +326,7 @@ void DmTft24_363_Display::refresh() {
 	if (_pageID==HOMEPAGE){ // in case the user is in the home_page
 
 		if (_changePage == 1) {
+			_changePage = 0;
 			_tft->clearScreen(BLACK);
 			homePage();
 		}
@@ -292,21 +336,22 @@ void DmTft24_363_Display::refresh() {
 
 	}
 	else if(_pageID==SETTINGSPAGE){
-		// varibales
+		// variables
 		uint16_t x1 = _tft->width()/2 ;
 		uint16_t y1 = 55;
 		uint16_t size1 = 50;
 		if (_changePage == 1) {
+			_changePage = 0;
 			_tft->clearScreen(BLACK);
 			settingsPage();
 		}
 		if (_speedChanged==1){ // redraw the speed value
 			_tft->fillRectangle(x1 + 5, y1, x1+size1, y1+size1, BLACK);
-			_tft->drawNumber(135 , 70, _settingsVariables[0], 3, false); //  _settingsVariables[0] <=> speed variable
+			_tft->drawNumber(135 , 70, _settingsVariables[SPEED], 3, false);
 		}
 		if (_micSensChanged==1){ // redraw the mic_sens value
 			_tft->fillRectangle(x1+5, 2*y1, x1+size1, 2*y1+size1, BLACK);
-			_tft->drawNumber(135 , 125, _settingsVariables[1], 3, false); // _settingsVariables[1] <=> Mic_sense variable
+			_tft->drawNumber(135 , 125, _settingsVariables[MIC_SENS], 3, false);
 		}
 	}
 
@@ -319,8 +364,8 @@ void DmTft24_363_Display::readSettings() {
 	// read blocs from flash memory
 	_myflash->read(_settingsVariables , _settingsAddress, _myflash->get_page_size());
 
-	printf("speed : %d\n", _settingsVariables[0]);
-	printf("mic_sens : %d\n", _settingsVariables[1]);
+	printf("speed : %d\n", _settingsVariables[SPEED]);
+	printf("mic_sens : %d\n", _settingsVariables[MIC_SENS]);
 
 }
 
@@ -333,56 +378,38 @@ void DmTft24_363_Display::saveSettings() {
 
 
 	printf("Settings saved \n");
-	printf("Saved speed : %d\n", _settingsVariables[0]);
-	printf("Saved mic_sens : %d\n", _settingsVariables[1]);
+	printf("Saved speed : %d\n", _settingsVariables[SPEED]);
+	printf("Saved mic_sens : %d\n", _settingsVariables[MIC_SENS]);
 
 }
 
 void DmTft24_363_Display::homePage() {
 
-	_changePage = 0;
-
 	printf("Home page...");
 
-	// variables display battery
-	uint16_t x0_rect = 200;
-	uint16_t y0_rect = 20;
-	uint16_t x1_rect = 230;
-	uint16_t y1_rect = 30;
-	uint16_t rect_width = x1_rect -1 - (x0_rect + 1) ; // -/+ 1 to avoid the pixels of the white rectangle
+	// case the settings were changed ==> save the settings
+	if ((_speedChanged== 1)||(_micSensChanged==1)){
+		_speedChanged = false;
+		_micSensChanged = false;
+		saveSettings();
+	}
 
 	// screen size
 	uint16_t w = _tft->width();
 	uint16_t h = _tft->height();
 
-	// case the settings were changed ==> save the settings
-	if ((_speedChanged== 1)||(_micSensChanged==1)){
-	  saveSettings();
-	}
-
-	// display settings button
-	_buttons[0]->draw(_tft);
-
-	// get the sound direction
-	float sound_angle_rad = (float)_angle * 3.14/180;
-	uint16_t circle_radius = 80;
-	uint16_t x_sound, y_sound;
-
-	x_sound = w/2 + circle_radius*cos(sound_angle_rad);
-	y_sound = h/2 - circle_radius*sin(sound_angle_rad);
-
-
-	// battery
+	/*
+	 * BATTERY
+	 */
+	uint16_t x0_rect = 200;
+	uint16_t y0_rect = 20;
+	uint16_t x1_rect = 230;
+	uint16_t y1_rect = 30;
+	uint16_t rect_width = x1_rect -1 - (x0_rect + 1) ; // -/+ 1 to avoid the pixels of the white rectangle
 	uint16_t level_to_pixel = (uint16_t)((_batteryLevel/100)*rect_width);
 	char battery_level_str[6];
 	sprintf(battery_level_str, "%.0f%s", _batteryLevel, "%"); // to convert battery_level to a string of a format "70.0 %"
 
-	// display direction
-	_tft->drawCircle(w/2, h/2, circle_radius, WHITE);
-	_tft->drawPoint(w/2, h/2);
-	_tft->drawLine(w/2, h/2, x_sound, y_sound, RED);
-
-	// drawing the Battery level
 	_tft->drawString(200, 0, battery_level_str);
 	_tft->drawRectangle(x0_rect, y0_rect, x1_rect, y1_rect, WHITE);
 	_tft->drawVerticalLine(x1_rect+1, y0_rect+4, 2, WHITE);
@@ -398,28 +425,52 @@ void DmTft24_363_Display::homePage() {
 		_tft->fillRectangle(x0_rect+1 , y0_rect+1 , x0_rect+1 + level_to_pixel, y1_rect-1, RED);
 	}
 
+	/*
+	 * ANGLE
+	 */
+	float sound_angle_rad = (float)_angle * 3.14/180;
+	uint16_t circle_radius = 80;
+	uint16_t x_sound, y_sound;
+
+	x_sound = w/2 + circle_radius*cos(sound_angle_rad);
+	y_sound = h/2 - circle_radius*sin(sound_angle_rad);
+
+	_tft->drawCircle(w/2, h/2, circle_radius, WHITE);
+	_tft->drawPoint(w/2, h/2);
+	_tft->drawLine(w/2, h/2, x_sound, y_sound, RED);
+
+	/*
+	 * BUTTON
+	 */
+	GraphObjectDraw(&_buttons[SETTINGS], 0, true,true);
+	_tft->drawString(0, 0, "settings");
+
 	printf("...completed\n\n");
 
 }
 
 void DmTft24_363_Display::settingsPage() {
 
-	_changePage = 0;
-	_speedChanged = 0;
-	_micSensChanged = 0;
-
 	printf("Settings page...");
 
-	// display
 	_tft->drawString(0, 70, "Speed");
-	_tft->drawNumber(135 , 70, _settingsVariables[0], 3, false); //  _settingsVariables[0] <=> speed variable
+	_tft->drawNumber(135 , 70, _settingsVariables[SPEED], 3, false); //  _settingsVariables[0] <=> speed variable
 	_tft->drawString(0, 125, "Mic Sens");
-	_tft->drawNumber(135 , 125, _settingsVariables[1], 3, false); //  _settingsVariables[1] <=> mic_sens variable
+	_tft->drawNumber(135 , 125, _settingsVariables[MIC_SENS], 3, false); //  _settingsVariables[1] <=> mic_sens variable
 
-	// display buttons
-	for (int i = 1; i < 6; i++) {
-		_buttons[i]->draw(_tft);
-	}
+	/*
+	 * BUTTONS
+	 */
+	GraphObjectDraw(&_buttons[BACK], 0, true, true);
+	_tft->drawString(0, 0, "back");
+	GraphObjectDraw(&_buttons[SPEED_MINUS], 0, true, true);
+	_tft->drawString(70, 55, "-");
+	GraphObjectDraw(&_buttons[SPEED_PLUS], 0, true, true);
+	_tft->drawString(190, 55, "-");
+	GraphObjectDraw(&_buttons[MIC_SENS_MINUS], 0, true, true);
+	_tft->drawString(70, 110, "-");
+	GraphObjectDraw(&_buttons[MIC_SENS_PLUS], 0, true, true);
+	_tft->drawString(190, 110, "-");
 
 	printf("...completed\n\n");
 

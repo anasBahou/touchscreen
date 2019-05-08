@@ -8,10 +8,11 @@
 #include "mbed.h"
 #include "DmTftIli9341.h"
 #include "DmTouch.h"
-#include "Button.h"
 #include "PinNames.h"
 #include "max17201.h"
+#include "DisplayDriver.h"
 
+#include <math.h>
 #include <stdio.h>
 
 #ifndef DMTFT24363DISPLAY_H_
@@ -21,6 +22,14 @@
 #define NUM_BUTTONS  6
 #define HOMEPAGE 0
 #define SETTINGSPAGE 1
+#define SPEED 0
+#define MIC_SENS 1
+#define SETTINGS 0
+#define BACK 1
+#define SPEED_MINUS 2
+#define SPEED_PLUS 3
+#define MIC_SENS_MINUS 4
+#define MIC_SENS_PLUS 5
 
 class DmTft24_363_Display {
 public:
@@ -66,7 +75,7 @@ private:
 	uint32_t _settingsAddress;
 	bool _speedChanged;
 	bool _micSensChanged;
-	Button* _buttons[NUM_BUTTONS];
+	GraphObject_t _buttons[NUM_BUTTONS];
 	FlashIAP* _myflash;
 	DmTftIli9341* _tft;
 	DmTouch* _touch;
