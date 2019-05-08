@@ -47,6 +47,9 @@ int main() {
 	I2C* i2c = new I2C(I2C1_SDA, I2C1_SCL);
 	DmTft24_363_Display* myTouchscreen = new DmTft24_363_Display(flash, tft, touch, touchItr, i2c);
 
+	myTouchscreen->init();
+
+	myTouchscreen->homePage();
 
 	while(1) {
 		myTouchscreen->refresh();

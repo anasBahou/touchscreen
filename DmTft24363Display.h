@@ -54,10 +54,6 @@ private:
 
 	void saveSettings();
 
-	//void homePage();
-
-	//void settingsPage();
-
 	void itrFunc();
 
 

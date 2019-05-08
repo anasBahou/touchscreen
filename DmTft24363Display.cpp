@@ -81,59 +81,77 @@ DmTft24_363_Display::~DmTft24_363_Display() {
 
 void  DmTft24_363_Display::handleTouchEvent()
 {
-	_touchItr->disable_irq();
+	//_touchItr->disable_irq();
 
 	//variables
 	bool down = false;
 	uint16_t x = 0;
 	uint16_t y = 0;
 
+	_queue->call_in(200, callback(_touchItr, &InterruptIn::enable_irq));
+
 	// read touch data
 	_touch->readTouchData(x, y, down);
-	printf("Coordinates read\n");
+	printf("Coordinates read %d %d\n", x, y);
 	for (int i = 0; i < 6; i++) {
-		if (_buttons[i]->handle(x, y, true)) {
+		if (_buttons[i]->handle(x, y, down)) {
 			switch(i){
 				case 0: // settings button
-					_pageID = SETTINGSPAGE;
-					_changePage = 1;
+					printf("case 0\n");
+					if (_pageID == HOMEPAGE) {
+						_pageID = SETTINGSPAGE;
+						_changePage = 1;
+						return;
+					}
 					break;
 				case 1: // back button
-					_pageID = HOMEPAGE;
-					_changePage = 1;
+					printf("case 1\n");
+					if (_pageID == SETTINGSPAGE) {
+						_pageID = HOMEPAGE;
+						_changePage = 1;
+						return;
+					}
 					break;
 				case 2: // case "-" pressed
+					printf("case 2\n");
 					if (_pageID == SETTINGSPAGE){
 						_speedChanged = 1; // the settings were changed
 						_settingsVariables[0]--; // _settingsVariables[0] <=> speed variable
+						return;
 					}
 					break;
 				case 3: // case "+" pressed
+					printf("case 3\n");
 					if (_pageID == SETTINGSPAGE){
 						_speedChanged = 1; // the settings were changed
 						_settingsVariables[0]++;
+						return;
 					}
 					break;
 				case 4: // case "-" pressed
+					printf("case 4\n");
 					if (_pageID == SETTINGSPAGE){
 						_micSensChanged = 1; // the settings were changed
 						_settingsVariables[1]--; // _settingsVariables[1] <=> Mic_sense variable
+						return;
 					}
 					break;
 				case 5: // case "+" pressed
+					printf("case 5\n");
 					if (_pageID == SETTINGSPAGE){
 						_micSensChanged = 1; // the settings were changed
 						_settingsVariables[1]++;
+						return;
 					}
 					break;
-
 			}
 		}
 	}
-	_touchItr->enable_irq();
+	//_touchItr->enable_irq();
 }
 
 void DmTft24_363_Display::itrFunc() {
+	_touchItr->disable_irq();
 	_queue->call(callback(this, &DmTft24_363_Display::handleTouchEvent));
 	printf("touch\n");
 }
