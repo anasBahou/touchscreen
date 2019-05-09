@@ -77,7 +77,7 @@ void  DmTft24_363_Display::handleTouchEvent()
 	uint8_t which;
 
 	if ( _pageID == HOMEPAGE ) {
-		if ( GraphObjectTouched(_buttons, NUM_BUTTONS, &which) == GO_STATUS_NOERR ) {
+		if ( GraphObjectTouched(_buttons, NUM_BUTTONS, &which, _tft, _touch) == GO_STATUS_NOERR ) {
 			_changePage = true;
 			_pageID = SETTINGSPAGE;
 			_buttons[SETTINGS].TouchActive = false;
@@ -86,7 +86,7 @@ void  DmTft24_363_Display::handleTouchEvent()
 	}
 
 	else if ( _pageID == SETTINGSPAGE ) {
-		if ( GraphObjectTouched(_buttons, NUM_BUTTONS, &which) == GO_STATUS_NOERR) {
+		if ( GraphObjectTouched(_buttons, NUM_BUTTONS, &which, _tft, _touch) == GO_STATUS_NOERR) {
 			if ( which == BACK ) {
 				_changePage = true;
 				_pageID = HOMEPAGE;
@@ -442,10 +442,12 @@ void DmTft24_363_Display::homePage() {
 	/*
 	 * BUTTON
 	 */
-	GraphObjectDraw(&_buttons[SETTINGS], 0, true,true);
+	GraphObjectDraw(&_buttons[SETTINGS], 0, true, true, _tft, _touch);
 	_tft->drawString(0, 0, "settings");
 
 	printf("...completed\n\n");
+
+
 
 }
 
@@ -461,15 +463,15 @@ void DmTft24_363_Display::settingsPage() {
 	/*
 	 * BUTTONS
 	 */
-	GraphObjectDraw(&_buttons[BACK], 0, true, true);
+	GraphObjectDraw(&_buttons[BACK], 0, true, true, _tft, _touch);
 	_tft->drawString(0, 0, "back");
-	GraphObjectDraw(&_buttons[SPEED_MINUS], 0, true, true);
+	GraphObjectDraw(&_buttons[SPEED_MINUS], 0, true, true, _tft, _touch);
 	_tft->drawString(70, 55, "-");
-	GraphObjectDraw(&_buttons[SPEED_PLUS], 0, true, true);
+	GraphObjectDraw(&_buttons[SPEED_PLUS], 0, true, true, _tft, _touch);
 	_tft->drawString(190, 55, "-");
-	GraphObjectDraw(&_buttons[MIC_SENS_MINUS], 0, true, true);
+	GraphObjectDraw(&_buttons[MIC_SENS_MINUS], 0, true, true, _tft, _touch);
 	_tft->drawString(70, 110, "-");
-	GraphObjectDraw(&_buttons[MIC_SENS_PLUS], 0, true, true);
+	GraphObjectDraw(&_buttons[MIC_SENS_PLUS], 0, true, true, _tft, _touch);
 	_tft->drawString(190, 110, "-");
 
 	printf("...completed\n\n");

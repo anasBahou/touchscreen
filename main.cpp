@@ -1,20 +1,9 @@
 /******************************************************************************
  * Includes
  *****************************************************************************/
-#include "mbed.h"
-#include "DmTftIli9341.h"
-#include "DmTouch.h"
-#include "Button.h"
-#include "PinNames.h"
-#include "max17201.h"
 #include "DmTft24363Display.h"
 
-#include <stdio.h>
-#include <math.h>
-
-
 using namespace sixtron;
-
 
 /******************************************************************************
  * Typedefs and defines
