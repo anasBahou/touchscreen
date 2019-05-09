@@ -24,24 +24,24 @@ using namespace sixtron;
 /******************************************************************************
  * Main
  *****************************************************************************/
+FlashIAP flash;
+DmTftIli9341 tft(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
+DmTouch touch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_SCK);
+InterruptIn touchItr(DIO4);
+I2C i2c(I2C1_SDA, I2C1_SCL);
+DmTft24_363_Display myTouchscreen(&flash, &tft, &touch, &touchItr, &i2c);
+
 
 int main() {
 
 	printf("ON...\n\n");
 
-	FlashIAP* flash = new FlashIAP();
-	DmTftIli9341* tft = new DmTftIli9341(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
-	DmTouch* touch = new DmTouch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_SCK);
-	InterruptIn* touchItr = new InterruptIn(DIO4);
-	I2C* i2c = new I2C(I2C1_SDA, I2C1_SCL);
-	DmTft24_363_Display* myTouchscreen = new DmTft24_363_Display(flash, tft, touch, touchItr, i2c);
+	myTouchscreen.init();
 
-	myTouchscreen->init();
-
-	myTouchscreen->homePage();
+	myTouchscreen.homePage();
 
 	while(1) {
-		myTouchscreen->refresh();
+		myTouchscreen.refresh();
 		wait_ms(1000);
 	}
 

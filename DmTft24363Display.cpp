@@ -12,26 +12,6 @@ using namespace sixtron;
 DmTft24_363_Display::DmTft24_363_Display() {
 
 	printf("Creation of DmTft24_363_Display...\n");
-
-	_pageID = HOMEPAGE;
-	_changePage = 0;
-	_batteryLevel = 0;
-	_angle = 0;
-	_previousAngle = 0;
-	for (int i = 0 ; i < NUM_SETTINGS_VARIABLES ; i++) {
-		_settingsVariables[i] = 0;
-	}
-	_speedChanged  = false;
-	_micSensChanged = false;
-	_settingsAddress = 0x080FF000;
-	_myflash = new FlashIAP;
-	_tft = new DmTftIli9341(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
-	_touch = new DmTouch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_SCK);
-	_touchItr = new InterruptIn(DIO4);
-	_i2c = new I2C(I2C1_SDA, I2C1_SCL);
-	_battery = new MAX17201(_i2c);
-	_queue = mbed_event_queue();
-
 	printf("... completed \n\n");
 
 }
@@ -47,9 +27,6 @@ DmTft24_363_Display::DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmT
 	_batteryLevel = 0;
 	_angle = 0;
 	_previousAngle = 0;
-	for (int i = 0 ; i < NUM_SETTINGS_VARIABLES ; i++) {
-		_settingsVariables[i] = 0;
-	}
 	_settingsAddress = 0x080FF000;
 	_myflash = flash;
 	_tft = tft;
@@ -111,13 +88,13 @@ void  DmTft24_363_Display::handleTouchEvent()
 			}
 
 			else if ( which == MIC_SENS_MINUS ) {
-				_speedChanged = true;
+				_micSensChanged = true;
 				_settingsVariables[MIC_SENS]--;
 				return;
 			}
 
 			else if ( which == MIC_SENS_PLUS ) {
-				_speedChanged = true;
+				_micSensChanged = true;
 				_settingsVariables[MIC_SENS]++;
 				return;
 			}
@@ -213,7 +190,7 @@ void DmTft24_363_Display::init() {
 	// "+" mi_sens button initialization
 	_buttons[MIC_SENS_PLUS].Id = MIC_SENS_PLUS;
 	_buttons[MIC_SENS_PLUS].Type = GO_RECTANGLE;
-	_buttons[MIC_SENS_PLUS].Xpos = 70;
+	_buttons[MIC_SENS_PLUS].Xpos = 190;
 	_buttons[MIC_SENS_PLUS].Ypos =110;
 	_buttons[MIC_SENS_PLUS].Width = 50;
 	_buttons[MIC_SENS_PLUS].Height = 50;
@@ -443,7 +420,7 @@ void DmTft24_363_Display::homePage() {
 	 * BUTTON
 	 */
 	GraphObjectDraw(&_buttons[SETTINGS], 0, true, true, _tft, _touch);
-	_tft->drawString(0, 0, "settings");
+	_tft->drawStringCentered(_buttons[SETTINGS].Xpos, _buttons[SETTINGS].Ypos, _buttons[SETTINGS].Width, _buttons[SETTINGS].Height, "settings");
 
 	printf("...completed\n\n");
 
@@ -464,15 +441,15 @@ void DmTft24_363_Display::settingsPage() {
 	 * BUTTONS
 	 */
 	GraphObjectDraw(&_buttons[BACK], 0, true, true, _tft, _touch);
-	_tft->drawString(0, 0, "back");
+	_tft->drawStringCentered(_buttons[BACK].Xpos, _buttons[BACK].Ypos, _buttons[BACK].Width, _buttons[BACK].Height, "back");
 	GraphObjectDraw(&_buttons[SPEED_MINUS], 0, true, true, _tft, _touch);
-	_tft->drawString(70, 55, "-");
+	_tft->drawStringCentered(_buttons[SPEED_MINUS].Xpos, _buttons[SPEED_MINUS].Ypos, _buttons[SPEED_MINUS].Width, _buttons[SPEED_MINUS].Height, "-");
 	GraphObjectDraw(&_buttons[SPEED_PLUS], 0, true, true, _tft, _touch);
-	_tft->drawString(190, 55, "-");
+	_tft->drawStringCentered(_buttons[SPEED_PLUS].Xpos, _buttons[SPEED_PLUS].Ypos, _buttons[SPEED_PLUS].Width, _buttons[SPEED_PLUS].Height, "+");
 	GraphObjectDraw(&_buttons[MIC_SENS_MINUS], 0, true, true, _tft, _touch);
-	_tft->drawString(70, 110, "-");
+	_tft->drawStringCentered(_buttons[MIC_SENS_MINUS].Xpos, _buttons[MIC_SENS_MINUS].Ypos, _buttons[MIC_SENS_MINUS].Width, _buttons[MIC_SENS_MINUS].Height, "-");
 	GraphObjectDraw(&_buttons[MIC_SENS_PLUS], 0, true, true, _tft, _touch);
-	_tft->drawString(190, 110, "-");
+	_tft->drawStringCentered(_buttons[MIC_SENS_PLUS].Xpos, _buttons[MIC_SENS_PLUS].Ypos, _buttons[MIC_SENS_PLUS].Width, _buttons[MIC_SENS_PLUS].Height, "+");
 
 	printf("...completed\n\n");
 

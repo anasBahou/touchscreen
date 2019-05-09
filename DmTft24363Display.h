@@ -58,10 +58,14 @@ public:
 
 	void handleTouchEvent();
 
-private:
 	void readSettings();
 
 	void saveSettings();
+
+private:
+	//void readSettings();
+
+	//void saveSettings();
 
 	void itrFunc();
 
