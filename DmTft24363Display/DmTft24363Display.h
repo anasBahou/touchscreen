@@ -29,7 +29,7 @@
 /*
  *
  */
-#define NUM_SETTINGS_VARIABLES  2
+#define NUM_SETTINGS_VARIABLES  3
 #define NUM_BUTTONS  6
 
 /*
@@ -59,7 +59,7 @@ public:
 
 	DmTft24_363_Display();
 
-	DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmTouch* touch, InterruptIn* touchItr, I2C* i2c, AnalogOut* dac, uint32_t settingsAddress);
+	DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmTouch* touch, InterruptIn* touchItr, I2C* i2c, uint32_t settingsAddress);
 
 	~DmTft24_363_Display();
 
@@ -84,6 +84,10 @@ public:
 
 	void handleTouchEvent();
 
+	float getSpeed();
+
+	float getMicSens();
+
 private:
 	void readSettings();
 
@@ -98,10 +102,14 @@ private:
 	float _previousBatteryLevel;
 	int _angle;
 	int _previousAngle;
-	uint16_t _settingsVariables[NUM_SETTINGS_VARIABLES];
+	float _settingsVariables[NUM_SETTINGS_VARIABLES];
 	uint32_t _settingsAddress;
 	bool _speedChanged;
 	bool _micSensChanged;
+	float _minMicSens;
+	float _maxMicSens;
+	float _minSpeed;
+	float _maxSpeed;
 	GraphObject_t _buttons[NUM_BUTTONS];
 	FlashIAP* _myflash;
 	DmTftIli9341* _tft;
@@ -110,7 +118,6 @@ private:
 	I2C* _i2c;
 	sixtron::MAX17201* _battery;
 	EventQueue* _queue;
-	AnalogOut* _dac;
 
 
 };

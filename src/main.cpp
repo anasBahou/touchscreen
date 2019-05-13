@@ -23,8 +23,8 @@ DmTftIli9341 tft(SPI1_CS, DIO2, SPI1_MOSI, SPI1_MISO, SPI1_SCK);
 DmTouch touch(DmTouch::DM_TFT24_363, SPI1_MOSI, SPI1_SCK);
 InterruptIn touchItr(DIO4);
 I2C i2c(I2C1_SDA, I2C1_SCL);
-AnalogOut dac(DAC_OUT1);
-DmTft24_363_Display myTouchscreen(&flash, &tft, &touch, &touchItr, &i2c, &dac, settingsAddress);
+//AnalogOut dac(DAC_OUT1);
+DmTft24_363_Display myTouchscreen(&flash, &tft, &touch, &touchItr, &i2c, settingsAddress);
 
 
 /******************************************************************************
@@ -37,6 +37,10 @@ DmTft24_363_Display myTouchscreen(&flash, &tft, &touch, &touchItr, &i2c, &dac, s
 int main() {
 
 	printf("ON...\n\n");
+
+	//flash.init();
+
+	//flash.erase(settingsAddress, flash.get_sector_size(settingsAddress));
 
 	myTouchscreen.init();
 

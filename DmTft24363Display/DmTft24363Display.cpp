@@ -15,7 +15,7 @@ DmTft24_363_Display::DmTft24_363_Display() {
 
 }
 
-DmTft24_363_Display::DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmTouch* touch, InterruptIn* touchItr, I2C* i2c, AnalogOut* dac, uint32_t settingsAddress) {
+DmTft24_363_Display::DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmTouch* touch, InterruptIn* touchItr, I2C* i2c, uint32_t settingsAddress) {
 
 	printf("Creation of DmTft24_363_Display...");
 
@@ -27,6 +27,10 @@ DmTft24_363_Display::DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmT
 	_previousBatteryLevel = 0;
 	_angle = 0;
 	_previousAngle = 0;
+	_minMicSens = 0;
+	_maxMicSens = 1;
+	_minSpeed = 0;
+	_maxSpeed = 1;
 	_settingsAddress = settingsAddress;
 	_myflash = flash;
 	_tft = tft;
@@ -35,7 +39,6 @@ DmTft24_363_Display::DmTft24_363_Display(FlashIAP* flash, DmTftIli9341* tft, DmT
 	_i2c = i2c;
 	_battery = new MAX17201(_i2c);
 	_queue = mbed_event_queue();
-	_dac = dac;
 
 	printf("... completed \n\n");
 
@@ -77,26 +80,34 @@ void  DmTft24_363_Display::handleTouchEvent()
 			}
 
 			else if ( which == SPEED_MINUS ) {
-				_speedChanged = true;
-				_settingsVariables[SPEED]--;
+				if ( ( _minSpeed <= _settingsVariables[SPEED] ) && ( _settingsVariables[SPEED] <= _maxSpeed ) ) {
+					_speedChanged = true;
+					_settingsVariables[SPEED]-=0.05;
+				}
 				return;
 			}
 
 			else if ( which == SPEED_PLUS ) {
-				_speedChanged = true;
-				_settingsVariables[SPEED]++;
+				if ( ( _minSpeed <= _settingsVariables[SPEED] ) && ( _settingsVariables[SPEED] <= _maxSpeed ) ) {
+					_speedChanged = true;
+					_settingsVariables[SPEED]+=0.05;
+				}
 				return;
 			}
 
 			else if ( which == MIC_SENS_MINUS ) {
-				_micSensChanged = true;
-				_settingsVariables[MIC_SENS]--;
+				if ( ( _minMicSens <= _settingsVariables[MIC_SENS] ) && ( _settingsVariables[MIC_SENS] <= _maxMicSens ) ) {
+					_micSensChanged = true;
+					_settingsVariables[MIC_SENS]-=0.015;
+				}
 				return;
 			}
 
 			else if ( which == MIC_SENS_PLUS ) {
-				_micSensChanged = true;
-				_settingsVariables[MIC_SENS]++;
+				if ( ( _minMicSens <= _settingsVariables[MIC_SENS] ) && ( _settingsVariables[MIC_SENS] <= _maxMicSens ) ) {
+					_micSensChanged = true;
+					_settingsVariables[MIC_SENS]+=0.015;
+				}
 				return;
 			}
 
@@ -211,9 +222,6 @@ void DmTft24_363_Display::init() {
 	  * SETTINGS VARIABLES AND MIC SENS INITIALIZATION
 	  */
 	 readSettings();
-	 //_dac->write((float)_settingsVariables[MIC_SENS]);
-	 _dac->write(0);
-
 
 	printf("...completed\n\n");
 	return;
@@ -345,6 +353,10 @@ void DmTft24_363_Display::refresh() {
 	}
 	else if(_pageID==SETTINGSPAGE){
 
+		char speed_c[5];
+		char mic_sens_c[5];
+		sprintf(speed_c, "%.1f", _settingsVariables[SPEED]*100);
+		sprintf(mic_sens_c, "%.1f", _settingsVariables[MIC_SENS]*100);
 		uint16_t x1 = _tft->width()/2 ;
 		uint16_t y1 = 55;
 		uint16_t size1 = 50;
@@ -354,12 +366,12 @@ void DmTft24_363_Display::refresh() {
 			settingsPage();
 		}
 		if (_speedChanged==1){ // redraw the speed value
-			_tft->fillRectangle(x1 + 5, y1, x1+size1, y1+size1, BLACK);
-			_tft->drawNumber(135 , 70, _settingsVariables[SPEED], 3, false);
+			_tft->fillRectangle(x1 + 5, y1, x1+size1+15, y1+size1, BLACK);
+			_tft->drawString(135 , 70, speed_c);
 		}
 		if (_micSensChanged==1){ // redraw the mic_sens value
-			_tft->fillRectangle(x1+5, 2*y1, x1+size1, 2*y1+size1, BLACK);
-			_tft->drawNumber(135 , 125, _settingsVariables[MIC_SENS], 3, false);
+			_tft->fillRectangle(x1+5, 2*y1, x1+size1+15, 2*y1+size1, BLACK);
+			_tft->drawString(135 , 125, mic_sens_c);
 		}
 	}
 
@@ -374,10 +386,18 @@ void DmTft24_363_Display::refresh() {
 void DmTft24_363_Display::readSettings() {
 
 	// read blocks from flash memory
-	_myflash->read(_settingsVariables , _settingsAddress, _myflash->get_page_size());
+	_myflash->read(_settingsVariables, _settingsAddress, sizeof(_settingsVariables));//_myflash->get_page_size());
 
-	printf("speed : %d\n", _settingsVariables[SPEED]);
-	printf("mic_sens : %d\n", _settingsVariables[MIC_SENS]);
+	if (isnan(_settingsVariables[SPEED]) != 0) {
+		_settingsVariables[SPEED] = 0.95;
+	}
+
+	if (isnan(_settingsVariables[MIC_SENS]) != 0) {
+		_settingsVariables[MIC_SENS] = 0.30;
+	}
+
+	printf("speed : %f\n", _settingsVariables[SPEED]);
+	printf("mic_sens : %f\n", _settingsVariables[MIC_SENS]);
 	return;
 
 }
@@ -387,12 +407,12 @@ void DmTft24_363_Display::saveSettings() {
 	// erase blocks on flash memory
 	_myflash->erase(_settingsAddress, _myflash->get_sector_size(_settingsAddress));
 	// program blocks
-	_myflash->program(_settingsVariables , _settingsAddress, _myflash->get_page_size());
+	_myflash->program(_settingsVariables , _settingsAddress, sizeof(_settingsVariables));//_myflash->get_page_size());
 
 
 	printf("Settings saved \n");
-	printf("Saved speed : %d\n", _settingsVariables[SPEED]);
-	printf("Saved mic_sens : %d\n", _settingsVariables[MIC_SENS]);
+	printf("Saved speed : %f\n", _settingsVariables[SPEED]);
+	printf("Saved mic_sens : %f\n", _settingsVariables[MIC_SENS]);
 	return;
 
 }
@@ -470,10 +490,16 @@ void DmTft24_363_Display::settingsPage() {
 
 	printf("Settings page...");
 
+	char speed_c[5];
+	char mic_sens_c[5];
+	sprintf(speed_c, "%.1f", _settingsVariables[SPEED]*100);
+	sprintf(mic_sens_c, "%.1f", _settingsVariables[MIC_SENS]*100);
+
+
 	_tft->drawString(0, 70, "Speed");
-	_tft->drawNumber(135 , 70, _settingsVariables[SPEED], 3, false); //  _settingsVariables[0] <=> speed variable
+	_tft->drawString(135 , 70, speed_c); //  _settingsVariables[0] <=> speed variable
 	_tft->drawString(0, 125, "Mic Sens");
-	_tft->drawNumber(135 , 125, _settingsVariables[MIC_SENS], 3, false); //  _settingsVariables[1] <=> mic_sens variable
+	_tft->drawString(135 , 125, mic_sens_c); //  _settingsVariables[1] <=> mic_sens variable
 
 	/*
 	 * BUTTONS
@@ -491,5 +517,17 @@ void DmTft24_363_Display::settingsPage() {
 
 	printf("...completed\n\n");
 	return;
+
+}
+
+float DmTft24_363_Display::getSpeed() {
+
+	return _settingsVariables[SPEED];
+
+}
+
+float DmTft24_363_Display::getMicSens() {
+
+	return _settingsVariables[MIC_SENS];
 
 }
