@@ -20,13 +20,6 @@
 
 
 /*
- * MODE
- */
-
-//#define DEBUG
-
-
-/*
  *
  */
 #define NUM_SETTINGS_VARIABLES  3
@@ -63,14 +56,11 @@ public:
 
 	~DmTft24_363_Display();
 
-
 	void init();
 
 	void setID(int pageID);
 
 	void setAngle(int angle);
-
-	void setBatteryLevel(float batteryLevel);
 
 	void refreshBatteryLevel();
 
@@ -82,18 +72,20 @@ public:
 
 	void settingsPage();
 
-	void handleTouchEvent();
-
 	float getSpeed();
 
 	float getMicSens();
 
 private:
+	void setBatteryLevel(float batteryLevel);
+
 	void readSettings();
 
 	void saveSettings();
 
 	void itrFunc();
+
+	void handleTouchEvent();
 
 
 	int _pageID;

@@ -228,31 +228,18 @@ void DmTft24_363_Display::init() {
 
 }
 
-void DmTft24_363_Display::setID(int pageID) {
-
-	printf("Set pageID...\n");
-	_pageID = pageID;
-	printf("...completed\n\n");
-	return;
-
-}
-
 void DmTft24_363_Display::setAngle(int angle) {
 
-	//printf("Setting angle...\n");
 	_previousAngle = _angle;
 	_angle = angle;
-	//printf("...completed\n\n");
 	return;
 
 }
 
 void DmTft24_363_Display::setBatteryLevel(float batteryLevel) {
 
-	//printf("Setting batteryLevel...\n");
 	_previousBatteryLevel = _batteryLevel;
 	_batteryLevel = batteryLevel;;
-	//printf("...completed\n\n");
 	return;
 
 }
@@ -301,8 +288,6 @@ void DmTft24_363_Display::refreshBatteryLevel() {
 
 void DmTft24_363_Display::refreshAngle() {
 
-	//setAngle((int)get_last_angle());
-
 	if ( _previousAngle != _angle ) {
 
 		// screen size
@@ -335,9 +320,6 @@ void DmTft24_363_Display::refreshAngle() {
 }
 
 void DmTft24_363_Display::refresh() {
-#if defined DEBUG
-	printf("\nRefreshing...\n\n");
-#endif
 
 	if (_pageID==HOMEPAGE){ // in case the user is in the home_page
 
@@ -375,10 +357,6 @@ void DmTft24_363_Display::refresh() {
 		}
 	}
 
-#if defined DEBUG
-	printf("...completed\n\n");
-#endif
-
 	return;
 
 }
@@ -408,7 +386,6 @@ void DmTft24_363_Display::saveSettings() {
 	_myflash->erase(_settingsAddress, _myflash->get_sector_size(_settingsAddress));
 	// program blocks
 	_myflash->program(_settingsVariables , _settingsAddress, sizeof(_settingsVariables));//_myflash->get_page_size());
-
 
 	printf("Settings saved \n");
 	printf("Saved speed : %f\n", _settingsVariables[SPEED]);
